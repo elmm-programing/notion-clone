@@ -1,0 +1,24 @@
+.cover {
+	position: relative;
+	height: 295px;
+	border-bottom: 2px solid #eaeaea;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+}
+
+.button {
+	transition: opacity 0.2s ease-in-out;
+	background: white;
+	cursor: pointer;
+}
+
+.cover:hover .button {
+	opacity: 1;
+}
+
+.image {
+	width: 100%;
+	max-height: 295px;
+	object-fit: cover;
+}
