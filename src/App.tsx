@@ -3,7 +3,6 @@
 // import viteLogo from '/vite.svg'
 import { nanoid } from 'nanoid'
 import './App.css'
-import { Cover } from './Page/Cover'
 import { Page } from './Page/Page'
 import { AppStateProvider } from './state/AppStateContext'
 
