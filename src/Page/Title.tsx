@@ -6,9 +6,9 @@ import {nanoid} from "nanoid"
 type TitleProps = {
   title: string;
   changePageTitle(title: string): void;
-  addNote(node: NodeData, index: number): void;
+  addNode(node: NodeData, index: number): void;
 }
-export const Title = ({ title, changePageTitle, addNote: addNode }: TitleProps) => {
+export const Title = ({ title, changePageTitle, addNode: addNode }: TitleProps) => {
   const headerRef = useRef<HTMLHeadingElement>(null)
 
   useEffect(() => {
