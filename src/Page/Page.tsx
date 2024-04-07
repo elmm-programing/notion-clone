@@ -5,6 +5,7 @@ import { BasicNode } from "../Node/BasicNode"
 import { Spacer } from "./Spacer"
 import { nanoid } from "nanoid"
 import { useAppState } from "../state/AppStateContext"
+import { NodeTypeSwitcher, NodeTypeSwitcherProps } from "../Node/NodeTypeSwitcher"
 
 export const Page = () => {
   const {nodes,addNode,title,setTitle} = useAppState()
@@ -16,7 +17,7 @@ export const Page = () => {
       <div>
         <Title addNode={addNode} title={title} changePageTitle={setTitle} />
         {nodes.map((node, index) => (
-          <BasicNode
+          <NodeTypeSwitcher
             key={node.id}
             node={node}
             isFocused={focusedNodeIndex === index}
