@@ -3,15 +3,12 @@
 // import viteLogo from '/vite.svg'
 import './App.css'
 import { Cover } from './Page/Cover'
+import { Page } from './Page/Page'
 
 function App() {
   // const [count, setCount] = useState(0)
   return (
-    <>
-      <div className="h1">Notion-clone</div>
-      <Cover></Cover>
-      
-    </>
+      <Page />
   )
 }
 
