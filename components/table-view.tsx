@@ -1,9 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ArrowDown, ArrowUp, Plus, Trash2 } from "lucide-react";
 import { DbCell, EditableText } from "@/components/db-cell";
-import { getCellValue, type DbSort, type ValueMap } from "@/lib/db";
+import {
+  getCellValue,
+  groupRows,
+  TITLE_PROP,
+  type DbSort,
+  type ValueMap,
+} from "@/lib/db";
 import type { DbProperty, DbPropertyType, Json, Page } from "@/types/database";
 
 const TYPE_LABELS: Record<DbPropertyType, string> = {
@@ -20,6 +26,9 @@ export function TableView({
   rows,
   valueMap,
   sorts,
+  groupByProperty,
+  widths,
+  onResize,
   onToggleSort,
   onCommitValue,
   onRowTitle,
@@ -36,6 +45,9 @@ export function TableView({
   rows: Page[];
   valueMap: ValueMap;
   sorts: DbSort[];
+  groupByProperty: DbProperty | null;
+  widths: Record<string, number>;
+  onResize: (id: string, width: number) => void;
   onToggleSort: (propertyId: string) => void;
   onCommitValue: (row: Page, property: DbProperty, value: Json | null) => void;
   onRowTitle: (rowId: string, title: string) => void;
@@ -48,28 +60,119 @@ export function TableView({
   onAddProp: () => void;
   canCreate: boolean;
 }) {
+  // Live width during a drag (committed on pointer-up).
+  const [drag, setDrag] = useState<{ id: string; w: number } | null>(null);
+  const [start, setStart] = useState<{ x: number; w: number } | null>(null);
+
+  useEffect(() => {
+    if (!drag || !start) return;
+    function move(e: PointerEvent) {
+      const w = Math.max(80, start!.w + (e.clientX - start!.x));
+      setDrag((d) => (d ? { ...d, w } : d));
+    }
+    function up() {
+      setDrag((d) => {
+        if (d) onResize(d.id, d.w);
+        return null;
+      });
+      setStart(null);
+    }
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+    return () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+    };
+  }, [drag, start, onResize]);
+
+  function widthOf(id: string): number | undefined {
+    if (drag && drag.id === id) return drag.w;
+    return widths[id];
+  }
+  function startResize(id: string, e: React.PointerEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    const w = widths[id] ?? 160;
+    setStart({ x: e.clientX, w });
+    setDrag({ id, w });
+  }
+
   function sortDir(propertyId: string): "asc" | "desc" | undefined {
     return sorts.find((s) => s.propertyId === propertyId)?.dir;
+  }
+
+  const colCount = properties.length + 2;
+  const groups = groupByProperty
+    ? groupRows(groupByProperty, rows, valueMap)
+    : null;
+
+  function renderRow(row: Page) {
+    return (
+      <tr key={row.id} className="group border-b border-border">
+        <td className="px-2 py-1">
+          <div className="flex items-center gap-1">
+            <EditableText
+              value={row.title}
+              placeholder="Untitled"
+              onCommit={(t) => onRowTitle(row.id, t)}
+              className="flex-1"
+            />
+            <button
+              onClick={() => onOpenRow(row.id)}
+              className="hidden text-xs text-muted-foreground hover:text-foreground group-hover:block"
+              title="Open as page"
+            >
+              Open
+            </button>
+            <button
+              onClick={() => onDeleteRow(row.id)}
+              className="hidden text-muted-foreground hover:text-red-500 group-hover:block"
+              title="Delete row"
+            >
+              <Trash2 size={13} />
+            </button>
+          </div>
+        </td>
+        {properties.map((property) => (
+          <td key={property.id} className="border-l border-border px-2 py-1">
+            <DbCell
+              property={property}
+              value={getCellValue(row, property.id, valueMap)}
+              onCommit={(v) => onCommitValue(row, property, v)}
+            />
+          </td>
+        ))}
+        <td className="border-l border-border" />
+      </tr>
+    );
   }
 
   return (
     <div>
       <div className="overflow-x-auto">
-        <table className="w-full border-collapse text-sm">
+        <table className="border-collapse text-sm" style={{ tableLayout: "fixed" }}>
+          <colgroup>
+            <col style={{ width: widthOf(TITLE_PROP) ?? 220 }} />
+            {properties.map((p) => (
+              <col key={p.id} style={{ width: widthOf(p.id) ?? 160 }} />
+            ))}
+            <col style={{ width: 40 }} />
+          </colgroup>
           <thead>
             <tr className="border-y border-border text-left text-muted-foreground">
-              <th className="min-w-48 px-2 py-1.5 font-medium">
+              <th className="relative px-2 py-1.5 font-medium">
                 <button
-                  onClick={() => onToggleSort("__title__")}
+                  onClick={() => onToggleSort(TITLE_PROP)}
                   className="flex items-center gap-1 hover:text-foreground"
                 >
-                  Name <SortIcon dir={sortDir("__title__")} />
+                  Name <SortIcon dir={sortDir(TITLE_PROP)} />
                 </button>
+                <ResizeHandle onDown={(e) => startResize(TITLE_PROP, e)} />
               </th>
               {properties.map((property) => (
                 <th
                   key={property.id}
-                  className="min-w-40 border-l border-border px-2 py-1.5 font-medium"
+                  className="relative border-l border-border px-2 py-1.5 font-medium"
                 >
                   <div className="flex items-center justify-between gap-1">
                     <PropertyHeader
@@ -86,6 +189,7 @@ export function TableView({
                       <SortIcon dir={sortDir(property.id)} />
                     </button>
                   </div>
+                  <ResizeHandle onDown={(e) => startResize(property.id, e)} />
                 </th>
               ))}
               <th className="border-l border-border px-2 py-1.5">
@@ -99,49 +203,24 @@ export function TableView({
               </th>
             </tr>
           </thead>
-          <tbody>
-            {rows.map((row) => (
-              <tr key={row.id} className="group border-b border-border">
-                <td className="px-2 py-1">
-                  <div className="flex items-center gap-1">
-                    <EditableText
-                      value={row.title}
-                      placeholder="Untitled"
-                      onCommit={(t) => onRowTitle(row.id, t)}
-                      className="flex-1"
-                    />
-                    <button
-                      onClick={() => onOpenRow(row.id)}
-                      className="hidden text-xs text-muted-foreground hover:text-foreground group-hover:block"
-                      title="Open as page"
-                    >
-                      Open
-                    </button>
-                    <button
-                      onClick={() => onDeleteRow(row.id)}
-                      className="hidden text-muted-foreground hover:text-red-500 group-hover:block"
-                      title="Delete row"
-                    >
-                      <Trash2 size={13} />
-                    </button>
-                  </div>
-                </td>
-                {properties.map((property) => (
+
+          {groups ? (
+            groups.map((g) => (
+              <tbody key={g.key}>
+                <tr className="bg-muted/40">
                   <td
-                    key={property.id}
-                    className="border-l border-border px-2 py-1"
+                    colSpan={colCount}
+                    className="px-2 py-1 text-xs font-medium text-muted-foreground"
                   >
-                    <DbCell
-                      property={property}
-                      value={getCellValue(row, property.id, valueMap)}
-                      onCommit={(v) => onCommitValue(row, property, v)}
-                    />
+                    {g.label} · {g.rows.length}
                   </td>
-                ))}
-                <td className="border-l border-border" />
-              </tr>
-            ))}
-          </tbody>
+                </tr>
+                {g.rows.map(renderRow)}
+              </tbody>
+            ))
+          ) : (
+            <tbody>{rows.map(renderRow)}</tbody>
+          )}
         </table>
       </div>
 
@@ -153,6 +232,15 @@ export function TableView({
         <Plus size={14} /> New row
       </button>
     </div>
+  );
+}
+
+function ResizeHandle({ onDown }: { onDown: (e: React.PointerEvent) => void }) {
+  return (
+    <div
+      onPointerDown={onDown}
+      className="absolute top-0 right-0 h-full w-1 cursor-col-resize hover:bg-foreground/20"
+    />
   );
 }
 

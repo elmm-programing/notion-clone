@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   Calendar as CalendarIcon,
+  Columns3,
   Filter as FilterIcon,
   Images,
   LayoutGrid,
@@ -171,6 +172,16 @@ export function DatabaseView({
     properties.find((p) => p.id === config.groupBy) ?? null;
   const dateProperty =
     properties.find((p) => p.id === config.dateProp) ?? null;
+  const hidden = config.hidden ?? [];
+  const visibleProperties = properties.filter((p) => !hidden.includes(p.id));
+
+  function toggleColumn(id: string) {
+    updateConfig({
+      hidden: hidden.includes(id)
+        ? hidden.filter((h) => h !== id)
+        : [...hidden, id],
+    });
+  }
 
   return (
     <div className="mx-auto max-w-6xl px-12 pt-2">
@@ -246,6 +257,33 @@ export function DatabaseView({
             ? ` (${config.filters!.length})`
             : ""}
         </button>
+
+        {active?.type === "table" && (
+          <>
+            <label className="flex items-center gap-1 text-muted-foreground">
+              Group
+              <select
+                value={config.groupBy ?? ""}
+                onChange={(e) =>
+                  updateConfig({ groupBy: e.target.value || null })
+                }
+                className="rounded border border-border bg-background px-1.5 py-1 outline-none"
+              >
+                <option value="">None</option>
+                {properties.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <ColumnsMenu
+              properties={properties}
+              hidden={hidden}
+              onToggle={toggleColumn}
+            />
+          </>
+        )}
       </div>
 
       {showFilters && (
@@ -305,10 +343,15 @@ export function DatabaseView({
         />
       ) : (
         <TableView
-          properties={properties}
+          properties={visibleProperties}
           rows={sorted}
           valueMap={valueMap}
           sorts={config.sorts ?? []}
+          groupByProperty={groupProperty}
+          widths={config.widths ?? {}}
+          onResize={(id, width) =>
+            updateConfig({ widths: { ...config.widths, [id]: width } })
+          }
           onToggleSort={toggleSort}
           onCommitValue={commitValue}
           onRowTitle={handleRowTitle}
@@ -382,6 +425,51 @@ function ViewTab({
         >
           <X size={12} />
         </button>
+      )}
+    </div>
+  );
+}
+
+function ColumnsMenu({
+  properties,
+  hidden,
+  onToggle,
+}: {
+  properties: DbProperty[];
+  hidden: string[];
+  onToggle: (id: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="flex items-center gap-1 rounded px-2 py-1 text-muted-foreground hover:bg-accent hover:text-foreground"
+      >
+        <Columns3 size={13} /> Properties
+      </button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
+          <div className="absolute z-20 mt-1 w-48 rounded-md border border-border bg-background p-1 shadow-lg">
+            {properties.length === 0 && (
+              <p className="px-2 py-1 text-muted-foreground">No properties.</p>
+            )}
+            {properties.map((p) => (
+              <label
+                key={p.id}
+                className="flex cursor-pointer items-center gap-2 rounded px-2 py-1 hover:bg-accent"
+              >
+                <input
+                  type="checkbox"
+                  checked={!hidden.includes(p.id)}
+                  onChange={() => onToggle(p.id)}
+                />
+                <span className="truncate">{p.name}</span>
+              </label>
+            ))}
+          </div>
+        </>
       )}
     </div>
   );

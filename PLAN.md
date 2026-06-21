@@ -30,8 +30,8 @@ Legend: ✅ done · 🟡 partial · ⬜ not started
 | Breadcrumbs, trash UI, favorites | ✅ |
 | Sidebar drag-reorder (same level) + inline rename | ✅ |
 | Search + Cmd-K quick switcher + recents | ✅ |
-| Databases: properties, 5 views (table/board/gallery/list/calendar), filter/sort | ✅ |
-| Table grouping, column resize, relations/rollups/formulas | ⬜ |
+| Databases: 5 views, filter/sort/group, column show-hide/resize | ✅ |
+| Relations / rollups / formulas (stretch) | ⬜ |
 | Realtime collaboration (Yjs) + presence | ⬜ |
 | Comments, mentions, sharing / public pages | ⬜ |
 | Media uploads (image/file/video) + rich block set | ✅ |
@@ -119,7 +119,7 @@ Design rules (carry forward):
 - ⬜ Callout & multi-column layout — need custom block / `xl-multi-column`.
 - ⬜ Code-block **syntax highlighting** (Shiki) — follow-up.
 
-### Phase 7 — Databases (largest phase) 🟡 (5 views, filter/sort) ⭐
+### Phase 7 — Databases ✅ (core done; relations/rollups/formulas are stretch) ⭐
 Building incrementally; Table view shipped first.
 - ✅ Create a database page (sidebar "New database"); **property schema editor**
   (add, rename, change type, delete) via the column header menu.
@@ -134,7 +134,8 @@ Building incrementally; Table view shipped first.
   rename, delete).
 - ✅ **Gallery**, **List**, **Calendar** views (calendar groups by a date
   property; add-on-day; month navigation).
-- ⬜ Table **grouping**, column show-hide & resize.
+- ✅ Table **grouping** (group by any property), **column show/hide**
+  (Properties menu) and **column resize** (drag handles, persisted widths).
 - ⬜ *(Stretch)* relations, rollups, formulas.
 
 ### Phase 8 — Realtime collaboration

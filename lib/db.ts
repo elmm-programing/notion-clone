@@ -21,7 +21,32 @@ export type ViewConfig = {
   filters?: DbFilter[];
   groupBy?: string | null;
   dateProp?: string | null;
+  hidden?: string[]; // property ids hidden in the table view
+  widths?: Record<string, number>; // column id -> px (TITLE_PROP for Name)
 };
+
+export type RowGroup = { key: string; label: string; rows: Page[] };
+
+// Group rows by a property's value (configured options + values present +
+// an "empty" group), preserving the incoming row order within each group.
+export function groupRows(
+  property: DbProperty,
+  rows: Page[],
+  valueMap: ValueMap,
+): RowGroup[] {
+  const cols = boardColumns(property, rows, valueMap);
+  const groups: RowGroup[] = cols.map((opt) => ({
+    key: opt,
+    label: opt,
+    rows: rows.filter((r) => getCellValue(r, property.id, valueMap) === opt),
+  }));
+  const empty = rows.filter((r) => {
+    const v = getCellValue(r, property.id, valueMap);
+    return v == null || v === "";
+  });
+  if (empty.length) groups.push({ key: "__none__", label: "No value", rows: empty });
+  return groups.filter((g) => g.rows.length > 0);
+}
 
 // Pseudo-property id for a row's page title (the first column).
 export const TITLE_PROP = "__title__";
