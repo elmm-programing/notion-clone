@@ -20,6 +20,7 @@ export type ViewConfig = {
   sorts?: DbSort[];
   filters?: DbFilter[];
   groupBy?: string | null;
+  dateProp?: string | null;
 };
 
 // Pseudo-property id for a row's page title (the first column).

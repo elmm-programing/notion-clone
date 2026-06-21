@@ -4,8 +4,11 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import {
+  Calendar as CalendarIcon,
   Filter as FilterIcon,
+  Images,
   LayoutGrid,
+  List as ListIcon,
   Plus,
   Table as TableIcon,
   X,
@@ -37,6 +40,9 @@ import {
 } from "@/lib/db";
 import { TableView } from "@/components/table-view";
 import { BoardView } from "@/components/board-view";
+import { GalleryView } from "@/components/gallery-view";
+import { ListView } from "@/components/list-view";
+import { CalendarView } from "@/components/calendar-view";
 import type {
   DbProperty,
   DbPropertyType,
@@ -100,12 +106,13 @@ export function DatabaseView({
 
   function updateConfig(patch: Partial<ViewConfig>) {
     if (!active) return;
-    updateView.mutate({
-      id: active.id,
-      patch: {
-        config: { ...config, ...patch } as unknown as DbView["config"],
-      },
-    });
+    const merged = { ...config, ...patch } as unknown as DbView["config"];
+    // Optimistically update the cache so rapid successive edits compose against
+    // the latest config instead of clobbering each other before the refetch.
+    qc.setQueryData<DbView[]>(["db_views", dbPage.id], (old) =>
+      old?.map((v) => (v.id === active.id ? { ...v, config: merged } : v)),
+    );
+    updateView.mutate({ id: active.id, patch: { config: merged } });
   }
 
   function toggleSort(propertyId: string) {
@@ -149,15 +156,21 @@ export function DatabaseView({
     });
   }
 
-  async function createRowInColumn(value: string | null) {
+  async function createRowWithValue(
+    propertyId: string | null,
+    value: Json | null,
+  ) {
     const row = await createRow.mutateAsync();
-    const groupProp = properties.find((p) => p.id === config.groupBy);
-    if (groupProp && value != null) commitValue(row, groupProp, value);
+    const prop = properties.find((p) => p.id === propertyId);
+    if (prop && value != null) commitValue(row, prop, value);
   }
 
   const selectProperties = properties.filter((p) => p.type === "select");
+  const dateProperties = properties.filter((p) => p.type === "date");
   const groupProperty =
     properties.find((p) => p.id === config.groupBy) ?? null;
+  const dateProperty =
+    properties.find((p) => p.id === config.dateProp) ?? null;
 
   return (
     <div className="mx-auto max-w-6xl px-12 pt-2">
@@ -180,22 +193,41 @@ export function DatabaseView({
           />
         ))}
         <button
-          onClick={() =>
-            createView.mutate({ type: "table", name: "Table" })
-          }
+          onClick={() => createView.mutate({ type: "table", name: "Table" })}
           className="px-1.5 py-1 text-muted-foreground hover:text-foreground"
           title="Add table view"
         >
           <TableIcon size={14} />
         </button>
         <button
-          onClick={() =>
-            createView.mutate({ type: "board", name: "Board" })
-          }
+          onClick={() => createView.mutate({ type: "board", name: "Board" })}
           className="px-1.5 py-1 text-muted-foreground hover:text-foreground"
           title="Add board view"
         >
           <LayoutGrid size={14} />
+        </button>
+        <button
+          onClick={() => createView.mutate({ type: "gallery", name: "Gallery" })}
+          className="px-1.5 py-1 text-muted-foreground hover:text-foreground"
+          title="Add gallery view"
+        >
+          <Images size={14} />
+        </button>
+        <button
+          onClick={() => createView.mutate({ type: "list", name: "List" })}
+          className="px-1.5 py-1 text-muted-foreground hover:text-foreground"
+          title="Add list view"
+        >
+          <ListIcon size={14} />
+        </button>
+        <button
+          onClick={() =>
+            createView.mutate({ type: "calendar", name: "Calendar" })
+          }
+          className="px-1.5 py-1 text-muted-foreground hover:text-foreground"
+          title="Add calendar view"
+        >
+          <CalendarIcon size={14} />
         </button>
       </div>
 
@@ -235,7 +267,41 @@ export function DatabaseView({
             if (groupProperty) commitValue(row, groupProperty, value);
           }}
           onOpenRow={(id) => router.push(`/page/${id}`)}
-          onCreateRowInColumn={createRowInColumn}
+          onCreateRowInColumn={(value) =>
+            createRowWithValue(config.groupBy ?? null, value)
+          }
+        />
+      ) : active?.type === "gallery" ? (
+        <GalleryView
+          properties={properties}
+          rows={sorted}
+          valueMap={valueMap}
+          onOpenRow={(id) => router.push(`/page/${id}`)}
+          onCreateRow={() => createRow.mutate()}
+          canCreate={!!workspaceId}
+        />
+      ) : active?.type === "list" ? (
+        <ListView
+          properties={properties}
+          rows={sorted}
+          valueMap={valueMap}
+          onRowTitle={handleRowTitle}
+          onOpenRow={(id) => router.push(`/page/${id}`)}
+          onDeleteRow={handleDeleteRow}
+          onCreateRow={() => createRow.mutate()}
+          canCreate={!!workspaceId}
+        />
+      ) : active?.type === "calendar" ? (
+        <CalendarView
+          dateProperty={dateProperty}
+          dateProperties={dateProperties}
+          rows={filtered}
+          valueMap={valueMap}
+          onSetDateProp={(propertyId) => updateConfig({ dateProp: propertyId })}
+          onOpenRow={(id) => router.push(`/page/${id}`)}
+          onCreateOnDate={(date) =>
+            createRowWithValue(config.dateProp ?? null, date)
+          }
         />
       ) : (
         <TableView
