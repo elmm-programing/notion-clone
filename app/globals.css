@@ -1,0 +1,50 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --background: #ffffff;
+  --foreground: #1f1f1f;
+  --muted: #f7f7f5;
+  --muted-foreground: #787774;
+  --border: #ededec;
+  --sidebar: #fbfbfa;
+  --accent: #efefee;
+}
+
+.dark {
+  --background: #191919;
+  --foreground: #ededed;
+  --muted: #202020;
+  --muted-foreground: #9b9b9b;
+  --border: #2f2f2f;
+  --sidebar: #202020;
+  --accent: #2c2c2c;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-sidebar: var(--sidebar);
+  --color-accent: var(--accent);
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+/* Let BlockNote inherit the app theme background */
+.bn-container,
+.bn-editor {
+  background: transparent !important;
+}
