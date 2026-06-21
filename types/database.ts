@@ -51,6 +51,12 @@ export type WorkspaceMember = {
   created_at: string;
 };
 
+export type Favorite = {
+  user_id: string;
+  page_id: string;
+  created_at: string;
+};
+
 export type Database = {
   public: {
     Tables: {
@@ -79,6 +85,12 @@ export type Database = {
         Row: Page;
         Insert: Partial<Page> & { workspace_id: string };
         Update: Partial<Page>;
+        Relationships: [];
+      };
+      favorites: {
+        Row: Favorite;
+        Insert: Partial<Favorite> & { user_id: string; page_id: string };
+        Update: Partial<Favorite>;
         Relationships: [];
       };
     };

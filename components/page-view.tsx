@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import { useEffect, useRef, useState } from "react";
 import type { Block, PartialBlock } from "@blocknote/core";
 import { usePage, useUpdatePage } from "@/lib/hooks";
+import { PageHeader } from "@/components/page-header";
 import type { Json } from "@/types/database";
 
 const Editor = dynamic(() => import("@/components/editor"), {
@@ -66,18 +67,21 @@ export function PageView({
   }
 
   return (
-    <div className="mx-auto max-w-3xl px-12 py-16">
-      <input
-        value={title}
-        onChange={(e) => handleTitleChange(e.target.value)}
-        placeholder="Untitled"
-        className="mb-4 w-full bg-transparent text-4xl font-bold outline-none placeholder:text-muted-foreground/40"
-      />
-      <Editor
-        key={page.id}
-        initialContent={(page.content as PartialBlock[] | null) ?? undefined}
-        onChange={handleContentChange}
-      />
+    <div className="pb-16">
+      <PageHeader page={page} workspaceId={workspaceId} />
+      <div className="mx-auto max-w-3xl px-12 pt-2">
+        <input
+          value={title}
+          onChange={(e) => handleTitleChange(e.target.value)}
+          placeholder="Untitled"
+          className="mb-4 w-full bg-transparent text-4xl font-bold outline-none placeholder:text-muted-foreground/40"
+        />
+        <Editor
+          key={page.id}
+          initialContent={(page.content as PartialBlock[] | null) ?? undefined}
+          onChange={handleContentChange}
+        />
+      </div>
     </div>
   );
 }

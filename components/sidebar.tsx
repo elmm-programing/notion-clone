@@ -4,20 +4,42 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import {
+  DndContext,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  arrayMove,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import {
   ChevronDown,
   ChevronRight,
   FileText,
+  GripVertical,
   Plus,
+  Star,
+  Trash,
   Trash2,
 } from "lucide-react";
 import {
   useCreatePage,
   useDeletePage,
+  useFavorites,
+  useMovePage,
   usePages,
+  useUpdatePage,
 } from "@/lib/hooks";
 import { signOut } from "@/lib/queries";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { TrashDialog } from "@/components/trash-dialog";
 import type { Page } from "@/types/database";
 
 export function Sidebar({
@@ -31,7 +53,16 @@ export function Sidebar({
 }) {
   const router = useRouter();
   const { data: pages = [], isLoading } = usePages(workspaceId);
+  const { data: favoriteIds = [] } = useFavorites();
   const createPage = useCreatePage(workspaceId);
+  const movePage = useMovePage(workspaceId);
+
+  const [trashOpen, setTrashOpen] = useState(false);
+
+  const byId = useMemo(
+    () => new Map(pages.map((p) => [p.id, p])),
+    [pages],
+  );
 
   const childrenByParent = useMemo(() => {
     const map = new Map<string | null, Page[]>();
@@ -43,10 +74,43 @@ export function Sidebar({
     return map;
   }, [pages]);
 
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
+  );
+
+  function handleDragEnd(e: DragEndEvent) {
+    const { active, over } = e;
+    if (!over || active.id === over.id) return;
+    const a = byId.get(String(active.id));
+    const o = byId.get(String(over.id));
+    if (!a || !o || a.parent_id !== o.parent_id) return; // same level only
+
+    const siblings = (childrenByParent.get(a.parent_id) ?? []).slice();
+    const oldIndex = siblings.findIndex((p) => p.id === a.id);
+    const newIndex = siblings.findIndex((p) => p.id === o.id);
+    if (oldIndex < 0 || newIndex < 0) return;
+
+    const reordered = arrayMove(siblings, oldIndex, newIndex);
+    const prev = reordered[newIndex - 1]?.position;
+    const next = reordered[newIndex + 1]?.position;
+    let position: number;
+    if (prev == null && next == null) position = Date.now();
+    else if (prev == null) position = next! - 1;
+    else if (next == null) position = prev + 1;
+    else position = (prev + next) / 2;
+
+    movePage.mutate({ id: a.id, position, parentId: a.parent_id });
+  }
+
   async function handleCreateRoot() {
     const page = await createPage.mutateAsync(null);
     router.push(`/page/${page.id}`);
   }
+
+  const rootPages = childrenByParent.get(null) ?? [];
+  const favorites = favoriteIds
+    .map((id) => byId.get(id))
+    .filter((p): p is Page => !!p);
 
   return (
     <aside className="flex h-full w-60 shrink-0 flex-col border-r border-border bg-sidebar text-sm">
@@ -67,26 +131,61 @@ export function Sidebar({
       </div>
 
       <nav className="mt-2 flex-1 overflow-y-auto px-2 pb-4">
+        {favorites.length > 0 && (
+          <div className="mb-3">
+            <p className="px-2 py-1 text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
+              Favorites
+            </p>
+            {favorites.map((page) => (
+              <Link
+                key={page.id}
+                href={`/page/${page.id}`}
+                className="flex items-center gap-1 rounded px-2 py-1 hover:bg-accent"
+              >
+                <Star size={13} className="fill-yellow-400 text-yellow-400" />
+                <span className="truncate">
+                  {page.icon ? `${page.icon} ` : ""}
+                  {page.title || "Untitled"}
+                </span>
+              </Link>
+            ))}
+          </div>
+        )}
+
+        <p className="px-2 py-1 text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
+          Private
+        </p>
+
         {isLoading && (
           <p className="px-2 py-1 text-xs text-muted-foreground">Loading…</p>
         )}
-        {!isLoading && (childrenByParent.get(null) ?? []).length === 0 && (
+        {!isLoading && rootPages.length === 0 && (
           <p className="px-2 py-1 text-xs text-muted-foreground">
             No pages yet.
           </p>
         )}
-        {(childrenByParent.get(null) ?? []).map((page) => (
-          <PageTreeItem
-            key={page.id}
-            page={page}
+
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          <PageLevel
+            parentId={null}
             depth={0}
             childrenByParent={childrenByParent}
             workspaceId={workspaceId}
           />
-        ))}
+        </DndContext>
       </nav>
 
       <div className="border-t border-border px-3 py-2">
+        <button
+          onClick={() => setTrashOpen(true)}
+          className="mb-2 flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground"
+        >
+          <Trash size={14} /> Trash
+        </button>
         <p className="truncate text-xs text-muted-foreground">{userEmail}</p>
         <button
           onClick={async () => {
@@ -99,7 +198,44 @@ export function Sidebar({
           Sign out
         </button>
       </div>
+
+      {trashOpen && (
+        <TrashDialog
+          workspaceId={workspaceId}
+          onClose={() => setTrashOpen(false)}
+        />
+      )}
     </aside>
+  );
+}
+
+function PageLevel({
+  parentId,
+  depth,
+  childrenByParent,
+  workspaceId,
+}: {
+  parentId: string | null;
+  depth: number;
+  childrenByParent: Map<string | null, Page[]>;
+  workspaceId: string | null;
+}) {
+  const items = childrenByParent.get(parentId) ?? [];
+  return (
+    <SortableContext
+      items={items.map((p) => p.id)}
+      strategy={verticalListSortingStrategy}
+    >
+      {items.map((page) => (
+        <PageTreeItem
+          key={page.id}
+          page={page}
+          depth={depth}
+          childrenByParent={childrenByParent}
+          workspaceId={workspaceId}
+        />
+      ))}
+    </SortableContext>
   );
 }
 
@@ -117,9 +253,15 @@ function PageTreeItem({
   const router = useRouter();
   const params = useParams();
   const [expanded, setExpanded] = useState(false);
+  const [renaming, setRenaming] = useState(false);
+  const [draftTitle, setDraftTitle] = useState(page.title);
 
   const createPage = useCreatePage(workspaceId);
   const deletePage = useDeletePage(workspaceId);
+  const updatePage = useUpdatePage(workspaceId);
+
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
+    useSortable({ id: page.id });
 
   const children = childrenByParent.get(page.id) ?? [];
   const hasChildren = children.length > 0;
@@ -140,16 +282,40 @@ function PageTreeItem({
     if (isActive) router.push("/");
   }
 
+  function commitRename() {
+    setRenaming(false);
+    const next = draftTitle.trim();
+    if (next !== page.title) {
+      updatePage.mutate({ id: page.id, patch: { title: next || "Untitled" } });
+    }
+  }
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
   return (
-    <div>
+    <div ref={setNodeRef} style={style}>
       <Link
         href={`/page/${page.id}`}
-        style={{ paddingLeft: depth * 12 + 8 }}
+        style={{ paddingLeft: depth * 12 + 4 }}
         className={cn(
           "group flex items-center gap-1 rounded px-2 py-1 hover:bg-accent",
           isActive && "bg-accent",
         )}
       >
+        <button
+          {...attributes}
+          {...listeners}
+          onClick={(e) => e.preventDefault()}
+          className="hidden shrink-0 cursor-grab text-muted-foreground group-hover:block"
+          title="Drag to reorder"
+        >
+          <GripVertical size={12} />
+        </button>
+
         <button
           onClick={(e) => {
             e.preventDefault();
@@ -172,7 +338,34 @@ function PageTreeItem({
           {page.icon ?? <FileText size={14} />}
         </span>
 
-        <span className="flex-1 truncate">{page.title || "Untitled"}</span>
+        {renaming ? (
+          <input
+            autoFocus
+            value={draftTitle}
+            onChange={(e) => setDraftTitle(e.target.value)}
+            onClick={(e) => e.preventDefault()}
+            onBlur={commitRename}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") commitRename();
+              if (e.key === "Escape") {
+                setDraftTitle(page.title);
+                setRenaming(false);
+              }
+            }}
+            className="flex-1 rounded border border-border bg-background px-1 text-sm outline-none"
+          />
+        ) : (
+          <span
+            className="flex-1 truncate"
+            onDoubleClick={(e) => {
+              e.preventDefault();
+              setDraftTitle(page.title);
+              setRenaming(true);
+            }}
+          >
+            {page.title || "Untitled"}
+          </span>
+        )}
 
         <button
           onClick={handleAddChild}
@@ -184,22 +377,20 @@ function PageTreeItem({
         <button
           onClick={handleDelete}
           className="hidden shrink-0 text-muted-foreground hover:text-red-500 group-hover:block"
-          title="Delete"
+          title="Move to trash"
         >
           <Trash2 size={14} />
         </button>
       </Link>
 
-      {expanded &&
-        children.map((child) => (
-          <PageTreeItem
-            key={child.id}
-            page={child}
-            depth={depth + 1}
-            childrenByParent={childrenByParent}
-            workspaceId={workspaceId}
-          />
-        ))}
+      {expanded && hasChildren && (
+        <PageLevel
+          parentId={page.id}
+          depth={depth + 1}
+          childrenByParent={childrenByParent}
+          workspaceId={workspaceId}
+        />
+      )}
     </div>
   );
 }

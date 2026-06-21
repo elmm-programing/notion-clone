@@ -26,8 +26,10 @@ Legend: ✅ done · 🟡 partial · ⬜ not started
 | Postgres schema + RLS + signup trigger (workspaces, members, pages) | ✅ |
 | Sidebar nested page tree (create / subpage / delete) | ✅ |
 | BlockNote editor: title + blocks + debounced autosave | ✅ |
-| Page icons / cover images | ⬜ |
-| Breadcrumbs, trash UI, favorites, search | ⬜ |
+| Page icons (emoji) / cover images (Storage) | ✅ |
+| Breadcrumbs, trash UI, favorites | ✅ |
+| Sidebar drag-reorder (same level) + inline rename | ✅ |
+| Search (Cmd-K) | ⬜ |
 | Databases (properties, views, filter/sort) | ⬜ |
 | Realtime collaboration (Yjs) + presence | ⬜ |
 | Comments, mentions, sharing / public pages | ⬜ |
@@ -80,13 +82,14 @@ Design rules (carry forward):
 
 ## 3. Roadmap to a complete clone
 
-### Phase 4 — Page polish & navigation (next up)
-- ⬜ Emoji **icon picker** + **cover image** (Supabase Storage) on page header.
-- ⬜ **Breadcrumbs** from the page ancestry.
-- ⬜ **Trash**: list soft-deleted pages, restore, permanent delete.
-- ⬜ **Favorites**: pin pages to a sidebar section (`favorites` table).
-- ⬜ Sidebar **drag-to-reorder & re-parent** (dnd-kit + fractional `position`).
-- ⬜ Inline title editing in the sidebar; "Untitled" placeholders.
+### Phase 4 — Page polish & navigation ✅ (done)
+- ✅ Emoji **icon picker** + **cover image** (Supabase Storage) on page header.
+- ✅ **Breadcrumbs** from the page ancestry.
+- ✅ **Trash**: list soft-deleted pages, restore, permanent delete.
+- ✅ **Favorites**: pin pages to a sidebar section (`favorites` table).
+- 🟡 Sidebar **drag-to-reorder** (dnd-kit + fractional `position`) — same-level
+  reordering works; cross-level **re-parenting via drag** is a follow-up.
+- ✅ Inline title editing in the sidebar (double-click); "Untitled" placeholders.
 
 ### Phase 5 — Search & quick switcher
 - ⬜ Postgres full-text search (`tsvector` over title + content text) with a
