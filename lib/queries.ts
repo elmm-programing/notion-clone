@@ -260,10 +260,14 @@ export async function createDatabase(input: {
 
   const page = data as Page;
   // Seed a default view and a first select property so the table isn't empty.
-  await db().from("db_views").insert({ page_id: page.id, type: "table" });
-  await db()
+  const { error: viewErr } = await db()
+    .from("db_views")
+    .insert({ page_id: page.id, type: "table" });
+  if (viewErr) throw viewErr;
+  const { error: propErr } = await db()
     .from("db_properties")
     .insert({ page_id: page.id, name: "Status", type: "select" });
+  if (propErr) throw propErr;
   return page;
 }
 

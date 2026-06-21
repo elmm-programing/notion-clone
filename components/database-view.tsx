@@ -136,7 +136,18 @@ export function DatabaseView({
                       Open
                     </button>
                     <button
-                      onClick={() => deleteRow.mutate(row.id)}
+                      onClick={() =>
+                        deleteRow.mutate(row.id, {
+                          onSuccess: () => {
+                            qc.invalidateQueries({
+                              queryKey: ["db_rows", dbPage.id],
+                            });
+                            qc.invalidateQueries({
+                              queryKey: ["db_values", dbPage.id],
+                            });
+                          },
+                        })
+                      }
                       className="hidden text-muted-foreground hover:text-red-500 group-hover:block"
                       title="Delete row"
                     >
@@ -265,7 +276,10 @@ function DbCell({
       <EditableText
         value={value == null ? "" : String(value)}
         placeholder="Empty"
-        onCommit={(t) => onCommit(t.trim() === "" ? null : Number(t))}
+        onCommit={(t) => {
+          const n = Number(t);
+          onCommit(t.trim() === "" || Number.isNaN(n) ? null : n);
+        }}
       />
     );
   }
