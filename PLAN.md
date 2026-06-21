@@ -30,7 +30,8 @@ Legend: ✅ done · 🟡 partial · ⬜ not started
 | Breadcrumbs, trash UI, favorites | ✅ |
 | Sidebar drag-reorder (same level) + inline rename | ✅ |
 | Search + Cmd-K quick switcher + recents | ✅ |
-| Databases (properties, views, filter/sort) | ⬜ |
+| Databases: properties + editable Table view | ✅ |
+| Database filter/sort/group + Board/Gallery/Calendar views | ⬜ |
 | Realtime collaboration (Yjs) + presence | ⬜ |
 | Comments, mentions, sharing / public pages | ⬜ |
 | Media uploads (image/file/video) + rich block set | ✅ |
@@ -118,17 +119,19 @@ Design rules (carry forward):
 - ⬜ Callout & multi-column layout — need custom block / `xl-multi-column`.
 - ⬜ Code-block **syntax highlighting** (Shiki) — follow-up.
 
-### Phase 7 — Databases (largest phase) ⭐
-Build incrementally; ship the Table view first.
-- ⬜ Create a database page; **property schema editor** (add/rename/reorder/delete).
-- ⬜ Property types: text, number, select, multi-select, date, checkbox, URL,
-  person, files, created/edited time.
-- ⬜ **Table view**: editable cells, add/delete rows (rows are pages), open row
-  as a full page.
+### Phase 7 — Databases (largest phase) 🟡 (Table view done) ⭐
+Building incrementally; Table view shipped first.
+- ✅ Create a database page (sidebar "New database"); **property schema editor**
+  (add, rename, change type, delete) via the column header menu.
+- ✅ Property types: text, number, select, checkbox, date, URL.
+  *(multi-select, person, files, created/edited time still ⬜)*
+- ✅ **Table view**: inline-editable cells per type, add/delete rows (rows are
+  child pages), open a row as a full page. Select remembers its options.
 - ⬜ **Filter / sort / group**, column show-hide & resize — persisted per view.
 - ⬜ **Board (Kanban)** view (group by select; dnd-kit columns).
 - ⬜ **Gallery**, **List**, **Calendar** views.
-- ⬜ Multiple saved views per database; view switcher.
+- ⬜ Multiple saved views per database; view switcher. *(schema/`db_views`
+  table seeded; switcher UI pending.)*
 - ⬜ *(Stretch)* relations, rollups, formulas.
 
 ### Phase 8 — Realtime collaboration

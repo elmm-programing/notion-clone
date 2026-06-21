@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import type { Block, PartialBlock } from "@blocknote/core";
 import { usePage, useUpdatePage } from "@/lib/hooks";
 import { PageHeader } from "@/components/page-header";
+import { DatabaseView } from "@/components/database-view";
 import { pushRecent } from "@/lib/recents";
 import type { Json } from "@/types/database";
 
@@ -78,15 +79,24 @@ export function PageView({
           value={title}
           onChange={(e) => handleTitleChange(e.target.value)}
           placeholder="Untitled"
-          className="mb-4 w-full bg-transparent text-4xl font-bold outline-none placeholder:text-muted-foreground/40"
-        />
-        <Editor
-          key={page.id}
-          pageId={page.id}
-          initialContent={(page.content as PartialBlock[] | null) ?? undefined}
-          onChange={handleContentChange}
+          className="w-full bg-transparent text-4xl font-bold outline-none placeholder:text-muted-foreground/40"
         />
       </div>
+
+      {page.is_database ? (
+        <DatabaseView dbPage={page} workspaceId={workspaceId} />
+      ) : (
+        <div className="mx-auto max-w-3xl px-12 pt-4">
+          <Editor
+            key={page.id}
+            pageId={page.id}
+            initialContent={
+              (page.content as PartialBlock[] | null) ?? undefined
+            }
+            onChange={handleContentChange}
+          />
+        </div>
+      )}
     </div>
   );
 }

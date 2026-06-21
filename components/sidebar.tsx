@@ -22,6 +22,7 @@ import { CSS } from "@dnd-kit/utilities";
 import {
   ChevronDown,
   ChevronRight,
+  Database,
   FileText,
   GripVertical,
   Pencil,
@@ -32,6 +33,7 @@ import {
   Trash2,
 } from "lucide-react";
 import {
+  useCreateDatabase,
   useCreatePage,
   useDeletePage,
   useFavorites,
@@ -61,6 +63,7 @@ export function Sidebar({
   const { data: pages = [], isLoading } = usePages(workspaceId);
   const { data: favoriteIds = [] } = useFavorites();
   const createPage = useCreatePage(workspaceId);
+  const createDatabase = useCreateDatabase(workspaceId);
   const movePage = useMovePage(workspaceId);
 
   const [trashOpen, setTrashOpen] = useState(false);
@@ -113,6 +116,11 @@ export function Sidebar({
     router.push(`/page/${page.id}`);
   }
 
+  async function handleCreateDatabase() {
+    const page = await createDatabase.mutateAsync(null);
+    router.push(`/page/${page.id}`);
+  }
+
   const rootPages = childrenByParent.get(null) ?? [];
   const favorites = favoriteIds
     .map((id) => byId.get(id))
@@ -143,6 +151,14 @@ export function Sidebar({
         >
           <Plus size={16} />
           New page
+        </button>
+        <button
+          onClick={handleCreateDatabase}
+          disabled={!workspaceId}
+          className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-muted-foreground hover:bg-accent hover:text-foreground disabled:opacity-50"
+        >
+          <Database size={16} />
+          New database
         </button>
       </div>
 
@@ -280,8 +296,9 @@ function PageTreeItem({
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: page.id });
 
+  // Database rows are child pages; don't surface them in the sidebar tree.
   const children = childrenByParent.get(page.id) ?? [];
-  const hasChildren = children.length > 0;
+  const hasChildren = !page.is_database && children.length > 0;
   const isActive = params?.id === page.id;
 
   async function handleAddChild(e: React.MouseEvent) {
@@ -352,7 +369,12 @@ function PageTreeItem({
         </button>
 
         <span className="shrink-0 text-muted-foreground">
-          {page.icon ?? <FileText size={14} />}
+          {page.icon ??
+            (page.is_database ? (
+              <Database size={14} />
+            ) : (
+              <FileText size={14} />
+            ))}
         </span>
 
         {renaming ? (

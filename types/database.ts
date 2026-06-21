@@ -57,6 +57,40 @@ export type Favorite = {
   created_at: string;
 };
 
+export type DbPropertyType =
+  | "text"
+  | "number"
+  | "select"
+  | "checkbox"
+  | "date"
+  | "url";
+
+export type DbProperty = {
+  id: string;
+  page_id: string;
+  name: string;
+  type: DbPropertyType;
+  config: { options?: string[] } & Record<string, Json>;
+  position: number;
+  created_at: string;
+};
+
+export type DbValue = {
+  page_id: string;
+  property_id: string;
+  value: Json | null;
+};
+
+export type DbView = {
+  id: string;
+  page_id: string;
+  type: "table" | "board" | "gallery" | "list" | "calendar";
+  name: string;
+  config: Record<string, Json>;
+  position: number;
+  created_at: string;
+};
+
 export type Database = {
   public: {
     Tables: {
@@ -91,6 +125,24 @@ export type Database = {
         Row: Favorite;
         Insert: Partial<Favorite> & { user_id: string; page_id: string };
         Update: Partial<Favorite>;
+        Relationships: [];
+      };
+      db_properties: {
+        Row: DbProperty;
+        Insert: Partial<DbProperty> & { page_id: string };
+        Update: Partial<DbProperty>;
+        Relationships: [];
+      };
+      db_values: {
+        Row: DbValue;
+        Insert: Partial<DbValue> & { page_id: string; property_id: string };
+        Update: Partial<DbValue>;
+        Relationships: [];
+      };
+      db_views: {
+        Row: DbView;
+        Insert: Partial<DbView> & { page_id: string };
+        Update: Partial<DbView>;
         Relationships: [];
       };
     };

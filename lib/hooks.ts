@@ -5,9 +5,16 @@ import {
 } from "@tanstack/react-query";
 import {
   addFavorite,
+  createDatabase,
+  createDbProperty,
+  createDbRow,
   createPage,
+  deleteDbProperty,
   getPage,
   hardDeletePage,
+  listDbProperties,
+  listDbRows,
+  listDbValues,
   listFavoriteIds,
   listPages,
   listTrashed,
@@ -15,10 +22,12 @@ import {
   removeFavorite,
   restorePage,
   searchPages,
+  setDbValue,
   softDeletePage,
+  updateDbProperty,
   updatePage,
 } from "@/lib/queries";
-import type { Json, Page } from "@/types/database";
+import type { DbProperty, DbPropertyType, Json, Page } from "@/types/database";
 
 export function usePages(workspaceId: string | null) {
   return useQuery({
@@ -41,6 +50,17 @@ export function useCreatePage(workspaceId: string | null) {
   return useMutation({
     mutationFn: (parentId?: string | null) =>
       createPage({ workspaceId: workspaceId!, parentId }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["pages", workspaceId] });
+    },
+  });
+}
+
+export function useCreateDatabase(workspaceId: string | null) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (parentId?: string | null) =>
+      createDatabase({ workspaceId: workspaceId!, parentId }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["pages", workspaceId] });
     },
@@ -131,6 +151,94 @@ export function useSearch(workspaceId: string | null, query: string) {
     queryKey: ["search", workspaceId, query],
     queryFn: () => searchPages(workspaceId!, query),
     enabled: !!workspaceId && query.trim().length > 0,
+  });
+}
+
+// --- Databases ------------------------------------------------------------
+
+export function useDbProperties(dbPageId: string) {
+  return useQuery({
+    queryKey: ["db_properties", dbPageId],
+    queryFn: () => listDbProperties(dbPageId),
+    enabled: !!dbPageId,
+  });
+}
+
+export function useDbRows(dbPageId: string) {
+  return useQuery({
+    queryKey: ["db_rows", dbPageId],
+    queryFn: () => listDbRows(dbPageId),
+    enabled: !!dbPageId,
+  });
+}
+
+export function useDbValues(dbPageId: string, rowIds: string[]) {
+  return useQuery({
+    queryKey: ["db_values", dbPageId, rowIds],
+    queryFn: () => listDbValues(rowIds),
+    enabled: rowIds.length > 0,
+  });
+}
+
+export function useCreateDbProperty(dbPageId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ name, type }: { name: string; type: DbPropertyType }) =>
+      createDbProperty(dbPageId, name, type),
+    onSuccess: () =>
+      qc.invalidateQueries({ queryKey: ["db_properties", dbPageId] }),
+  });
+}
+
+export function useUpdateDbProperty(dbPageId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      id,
+      patch,
+    }: {
+      id: string;
+      patch: Partial<Pick<DbProperty, "name" | "type" | "config" | "position">>;
+    }) => updateDbProperty(id, patch),
+    onSuccess: () =>
+      qc.invalidateQueries({ queryKey: ["db_properties", dbPageId] }),
+  });
+}
+
+export function useDeleteDbProperty(dbPageId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => deleteDbProperty(id),
+    onSuccess: () =>
+      qc.invalidateQueries({ queryKey: ["db_properties", dbPageId] }),
+  });
+}
+
+export function useCreateDbRow(dbPageId: string, workspaceId: string | null) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => createDbRow(dbPageId, workspaceId!),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["db_rows", dbPageId] });
+      qc.invalidateQueries({ queryKey: ["pages", workspaceId] });
+    },
+  });
+}
+
+export function useSetDbValue(dbPageId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      rowId,
+      propertyId,
+      value,
+    }: {
+      rowId: string;
+      propertyId: string;
+      value: Json | null;
+    }) => setDbValue(rowId, propertyId, value),
+    onSuccess: () =>
+      qc.invalidateQueries({ queryKey: ["db_values", dbPageId] }),
   });
 }
 

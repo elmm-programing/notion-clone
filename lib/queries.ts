@@ -1,5 +1,11 @@
 import { createClient } from "@/lib/supabase/client";
-import type { Json, Page } from "@/types/database";
+import type {
+  DbProperty,
+  DbPropertyType,
+  DbValue,
+  Json,
+  Page,
+} from "@/types/database";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database";
 
@@ -232,6 +238,121 @@ export async function uploadMedia(
 
   const { data } = db().storage.from("media").getPublicUrl(path);
   return data.publicUrl;
+}
+
+// --- Databases ------------------------------------------------------------
+
+export async function createDatabase(input: {
+  workspaceId: string;
+  parentId?: string | null;
+}): Promise<Page> {
+  const { data, error } = await db()
+    .from("pages")
+    .insert({
+      workspace_id: input.workspaceId,
+      parent_id: input.parentId ?? null,
+      title: "Untitled database",
+      is_database: true,
+    })
+    .select("*")
+    .single();
+  if (error) throw error;
+
+  const page = data as Page;
+  // Seed a default view and a first select property so the table isn't empty.
+  await db().from("db_views").insert({ page_id: page.id, type: "table" });
+  await db()
+    .from("db_properties")
+    .insert({ page_id: page.id, name: "Status", type: "select" });
+  return page;
+}
+
+export async function listDbProperties(
+  dbPageId: string,
+): Promise<DbProperty[]> {
+  const { data, error } = await db()
+    .from("db_properties")
+    .select("*")
+    .eq("page_id", dbPageId)
+    .order("position", { ascending: true });
+  if (error) throw error;
+  return data as DbProperty[];
+}
+
+export async function createDbProperty(
+  dbPageId: string,
+  name: string,
+  type: DbPropertyType,
+): Promise<void> {
+  const { error } = await db()
+    .from("db_properties")
+    .insert({ page_id: dbPageId, name, type });
+  if (error) throw error;
+}
+
+export async function updateDbProperty(
+  id: string,
+  patch: Partial<Pick<DbProperty, "name" | "type" | "config" | "position">>,
+): Promise<void> {
+  const { error } = await db().from("db_properties").update(patch).eq("id", id);
+  if (error) throw error;
+}
+
+export async function deleteDbProperty(id: string): Promise<void> {
+  const { error } = await db().from("db_properties").delete().eq("id", id);
+  if (error) throw error;
+}
+
+export async function listDbRows(dbPageId: string): Promise<Page[]> {
+  const { data, error } = await db()
+    .from("pages")
+    .select("*")
+    .eq("parent_id", dbPageId)
+    .is("deleted_at", null)
+    .order("position", { ascending: true });
+  if (error) throw error;
+  return data as Page[];
+}
+
+export async function listDbValues(rowIds: string[]): Promise<DbValue[]> {
+  if (rowIds.length === 0) return [];
+  const { data, error } = await db()
+    .from("db_values")
+    .select("*")
+    .in("page_id", rowIds);
+  if (error) throw error;
+  return data as DbValue[];
+}
+
+export async function setDbValue(
+  rowId: string,
+  propertyId: string,
+  value: Json | null,
+): Promise<void> {
+  const { error } = await db()
+    .from("db_values")
+    .upsert(
+      { page_id: rowId, property_id: propertyId, value },
+      { onConflict: "page_id,property_id" },
+    );
+  if (error) throw error;
+}
+
+export async function createDbRow(
+  dbPageId: string,
+  workspaceId: string,
+): Promise<Page> {
+  const { data, error } = await db()
+    .from("pages")
+    .insert({
+      workspace_id: workspaceId,
+      parent_id: dbPageId,
+      title: "",
+    })
+    .select("*")
+    .single();
+  if (error) throw error;
+  return data as Page;
 }
 
 export async function signOut() {
