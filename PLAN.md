@@ -8,18 +8,27 @@
 
 ---
 
-## 1. Target Stack
+## 1. Target Stack (finalized)
+
+Chosen for two stated priorities: **(1) Notion-style databases/tables** and
+**(2) public "publish-to-web" pages**.
 
 | Concern | Choice | Notes |
 | --- | --- | --- |
-| Framework | **React + Vite** (or Next.js) | Vite for an SPA; Next.js if SSR/SEO for public pages matters. |
-| Language | **TypeScript** | Strongly recommended for the block/data model. |
-| Backend / DB | **Supabase** (Postgres + Auth + Storage + Realtime) | Auth, row-level security, file uploads, realtime sync. |
-| Editor | **Tiptap** (ProseMirror) or a custom block editor | Tiptap gives a big head start on rich text + blocks. |
-| State / data | **TanStack Query** + Zustand/Context | Server cache + local UI state. |
-| Styling | **Tailwind CSS** + Radix UI / shadcn | Fast, accessible primitives for menus, modals, popovers. |
-| Drag & drop | **dnd-kit** | Block reordering, board columns, sidebar reorder. |
-| Routing | React Router (Vite) or App Router (Next) | |
+| Framework | **Next.js 15 (App Router) + React 19** | SSR/SEO for public shared pages. |
+| Language | **TypeScript** | Non-negotiable for the block/database model. |
+| Backend / DB | **Supabase** (Postgres + Auth + Storage + Realtime + RLS) | Postgres is the priority: database filters/sorts/relations/rollups map directly to SQL. |
+| Editor | **BlockNote** (built on Tiptap/ProseMirror) ⭐ | Notion-style block editor out of the box — slash menu, drag handles, nested blocks, built-in Yjs collab. The single biggest time-saver. |
+| Realtime collab | **Yjs (CRDT)** via BlockNote, synced over Supabase Realtime (or y-sweet/PartyKit at scale) | CRDT removes manual conflict resolution. |
+| State / data | **TanStack Query** + generated Supabase types; **Zustand** for local UI state | Typed server cache + light UI state. |
+| Styling | **Tailwind CSS v4** + **shadcn/ui** (Radix) | Accessible menus, modals, popovers. |
+| Drag & drop | **dnd-kit** | Block reorder, board columns, sidebar tree, gallery. |
+| Routing | Next.js App Router | Public pages SSR; app pages client-rendered. |
+
+> **Why this over the original "React + Vite + Supabase":** added **BlockNote**
+> (don't hand-roll the editor or even raw Tiptap), switched **Vite → Next.js** for
+> public-page SSR, and made **Yjs** an explicit collaboration layer. Supabase/Postgres
+> retained deliberately because the database/tables feature was the top priority.
 
 ---
 
