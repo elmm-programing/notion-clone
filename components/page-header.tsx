@@ -9,7 +9,7 @@ import {
   useToggleFavorite,
   useUpdatePage,
 } from "@/lib/hooks";
-import { uploadCover } from "@/lib/queries";
+import { removeCover, uploadCover } from "@/lib/queries";
 import { EmojiPicker } from "@/components/emoji-picker";
 import type { Page } from "@/types/database";
 
@@ -97,9 +97,10 @@ export function PageHeader({
               Change
             </button>
             <button
-              onClick={() =>
-                updatePage.mutate({ id: page.id, patch: { cover_url: null } })
-              }
+              onClick={async () => {
+                await removeCover(page.id);
+                updatePage.mutate({ id: page.id, patch: { cover_url: null } });
+              }}
               className="rounded bg-background/80 px-2 py-1 text-xs hover:bg-background"
             >
               Remove

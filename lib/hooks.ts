@@ -14,6 +14,7 @@ import {
   movePage,
   removeFavorite,
   restorePage,
+  searchPages,
   softDeletePage,
   updatePage,
 } from "@/lib/queries";
@@ -120,6 +121,16 @@ export function useHardDeletePage(workspaceId: string | null) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["trash", workspaceId] });
     },
+  });
+}
+
+// --- Search ---------------------------------------------------------------
+
+export function useSearch(workspaceId: string | null, query: string) {
+  return useQuery({
+    queryKey: ["search", workspaceId, query],
+    queryFn: () => searchPages(workspaceId!, query),
+    enabled: !!workspaceId && query.trim().length > 0,
   });
 }
 

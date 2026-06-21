@@ -29,7 +29,7 @@ Legend: ✅ done · 🟡 partial · ⬜ not started
 | Page icons (emoji) / cover images (Storage) | ✅ |
 | Breadcrumbs, trash UI, favorites | ✅ |
 | Sidebar drag-reorder (same level) + inline rename | ✅ |
-| Search (Cmd-K) | ⬜ |
+| Search + Cmd-K quick switcher + recents | ✅ |
 | Databases (properties, views, filter/sort) | ⬜ |
 | Realtime collaboration (Yjs) + presence | ⬜ |
 | Comments, mentions, sharing / public pages | ⬜ |
@@ -91,11 +91,20 @@ Design rules (carry forward):
   reordering works; cross-level **re-parenting via drag** is a follow-up.
 - ✅ Inline title editing in the sidebar (double-click); "Untitled" placeholders.
 
-### Phase 5 — Search & quick switcher
-- ⬜ Postgres full-text search (`tsvector` over title + content text) with a
-  `search_pages()` RPC.
-- ⬜ **Cmd-K** quick switcher (fuzzy page jump, recent pages, "create page").
-- ⬜ Recent-pages tracking.
+### Phase 5 — Search & quick switcher ✅ (done)
+- ✅ Title search (`ILIKE`, trigram-indexed). *(Content-text / ranked `tsvector`
+  search deferred until block text extraction lands in Phase 6.)*
+- ✅ **Cmd-K** quick switcher: search, recent pages, "create page" (uses the
+  typed text as the title), full keyboard navigation.
+- ✅ Recent-pages tracking (localStorage).
+
+#### Phase 4 follow-up fixes (done in migration 0003)
+- ✅ Soft delete / restore now **cascade** the whole subtree (no orphaned pages);
+  Trash shows only top-level deleted entries.
+- ✅ Cover objects are **deleted from Storage** on replace/remove (no leak).
+- ✅ Cover bucket writes **scoped to the owning page's workspace** members.
+- ✅ Favorite toggle uses **upsert** (no PK error on rapid clicks); sign-out
+  **clears the query cache**.
 
 ### Phase 6 — Rich blocks & media
 - ⬜ Image / file / video upload via Supabase Storage (BlockNote upload handler).

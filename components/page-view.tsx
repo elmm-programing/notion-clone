@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import type { Block, PartialBlock } from "@blocknote/core";
 import { usePage, useUpdatePage } from "@/lib/hooks";
 import { PageHeader } from "@/components/page-header";
+import { pushRecent } from "@/lib/recents";
 import type { Json } from "@/types/database";
 
 const Editor = dynamic(() => import("@/components/editor"), {
@@ -29,7 +30,10 @@ export function PageView({
   const contentTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    if (page) setTitle(page.title ?? "");
+    if (page) {
+      setTitle(page.title ?? "");
+      pushRecent(page.id);
+    }
   }, [page?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function handleTitleChange(value: string) {

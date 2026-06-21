@@ -100,6 +100,14 @@ export type Database = {
         Args: { ws: string };
         Returns: boolean;
       };
+      soft_delete_page: {
+        Args: { p_id: string };
+        Returns: undefined;
+      };
+      restore_page: {
+        Args: { p_id: string };
+        Returns: undefined;
+      };
     };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;

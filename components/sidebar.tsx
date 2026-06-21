@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   DndContext,
   PointerSensor,
@@ -23,7 +24,9 @@ import {
   ChevronRight,
   FileText,
   GripVertical,
+  Pencil,
   Plus,
+  Search,
   Star,
   Trash,
   Trash2,
@@ -46,12 +49,15 @@ export function Sidebar({
   userEmail,
   workspaceId,
   workspaceName,
+  onOpenSearch,
 }: {
   userEmail: string;
   workspaceId: string | null;
   workspaceName: string;
+  onOpenSearch: () => void;
 }) {
   const router = useRouter();
+  const qc = useQueryClient();
   const { data: pages = [], isLoading } = usePages(workspaceId);
   const { data: favoriteIds = [] } = useFavorites();
   const createPage = useCreatePage(workspaceId);
@@ -120,6 +126,16 @@ export function Sidebar({
       </div>
 
       <div className="px-2">
+        <button
+          onClick={onOpenSearch}
+          className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-muted-foreground hover:bg-accent hover:text-foreground"
+        >
+          <Search size={16} />
+          <span className="flex-1 text-left">Search</span>
+          <kbd className="rounded border border-border px-1 text-[10px]">
+            ⌘K
+          </kbd>
+        </button>
         <button
           onClick={handleCreateRoot}
           disabled={!workspaceId}
@@ -190,6 +206,7 @@ export function Sidebar({
         <button
           onClick={async () => {
             await signOut();
+            qc.clear(); // drop cached user-scoped data (favorites, pages, …)
             router.push("/login");
             router.refresh();
           }}
@@ -355,18 +372,21 @@ function PageTreeItem({
             className="flex-1 rounded border border-border bg-background px-1 text-sm outline-none"
           />
         ) : (
-          <span
-            className="flex-1 truncate"
-            onDoubleClick={(e) => {
-              e.preventDefault();
-              setDraftTitle(page.title);
-              setRenaming(true);
-            }}
-          >
-            {page.title || "Untitled"}
-          </span>
+          <span className="flex-1 truncate">{page.title || "Untitled"}</span>
         )}
 
+        <button
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setDraftTitle(page.title);
+            setRenaming(true);
+          }}
+          className="hidden shrink-0 text-muted-foreground hover:text-foreground group-hover:block"
+          title="Rename"
+        >
+          <Pencil size={13} />
+        </button>
         <button
           onClick={handleAddChild}
           className="hidden shrink-0 text-muted-foreground hover:text-foreground group-hover:block"
