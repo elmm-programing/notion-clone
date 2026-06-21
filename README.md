@@ -19,20 +19,22 @@ See [`PLAN.md`](./PLAN.md) for the full feature comparison against Notion and th
 - Email/password auth (sign up / sign in / sign out) via Supabase Auth
 - Auth-guarded app via Next.js middleware
 - Auto-provisioned workspace on signup (DB trigger)
-- Sidebar with a nested page tree (create root pages, subpages, delete)
-- Block editor (BlockNote) with title, slash menu, and autosave to Supabase
+- Sidebar nested page tree: create, subpages, drag-reorder, inline rename, favorites, trash
+- Page header: emoji icons, cover images, breadcrumbs
+- Block editor (BlockNote): slash menu, rich blocks, image/file/video upload, autosave
+- Search + ⌘K quick switcher with recent pages
 - Light/dark theme toggle
-- Postgres schema with Row Level Security (`supabase/migrations/0001_init.sql`)
+- Postgres schema with Row Level Security (`supabase/migrations/`)
 
 Still to build (see `PLAN.md`): databases/table views, realtime collaboration (Yjs),
-sharing/public pages, search (Cmd-K), trash UI, covers/icons, drag-reorder.
+sharing/public pages, comments, embeds/callouts, export.
 
 ## Getting started
 
 ### 1. Create a Supabase project
 
-Create a project at [supabase.com](https://supabase.com), then run the SQL in
-`supabase/migrations/0001_init.sql` in the **SQL Editor** (or `supabase db push`
+Create a project at [supabase.com](https://supabase.com), then run each file in
+`supabase/migrations/` in order in the **SQL Editor** (or `supabase db push`
 with the CLI).
 
 In **Authentication → Providers → Email**, enable email sign-ups. For local dev

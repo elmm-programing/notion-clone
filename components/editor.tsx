@@ -7,12 +7,15 @@ import { useCreateBlockNote } from "@blocknote/react";
 import { BlockNoteView } from "@blocknote/mantine";
 import { useTheme } from "next-themes";
 import type { Block, PartialBlock } from "@blocknote/core";
+import { uploadMedia } from "@/lib/queries";
 
 export default function Editor({
+  pageId,
   initialContent,
   onChange,
   editable = true,
 }: {
+  pageId: string;
   initialContent?: PartialBlock[];
   onChange?: (document: Block[]) => void;
   editable?: boolean;
@@ -22,6 +25,8 @@ export default function Editor({
   const editor = useCreateBlockNote({
     initialContent:
       initialContent && initialContent.length > 0 ? initialContent : undefined,
+    // Image / file / video blocks upload to Supabase Storage and store a URL.
+    uploadFile: (file: File) => uploadMedia(pageId, file),
   });
 
   return (

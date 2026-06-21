@@ -124,11 +124,14 @@ export function CommandPalette({
         </div>
 
         <div className="max-h-80 overflow-y-auto p-1">
-          {query.trim() && !isFetching && results.length === 0 && (
-            <p className="px-3 py-2 text-xs text-muted-foreground">
-              No pages match “{query.trim()}”.
-            </p>
-          )}
+          {query.trim() &&
+            query === debounced &&
+            !isFetching &&
+            results.length === 0 && (
+              <p className="px-3 py-2 text-xs text-muted-foreground">
+                No pages match “{debounced.trim()}”.
+              </p>
+            )}
           {!query.trim() && items.length === 1 && (
             <p className="px-3 py-2 text-xs text-muted-foreground">
               No recent pages yet.

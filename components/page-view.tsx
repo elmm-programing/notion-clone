@@ -82,6 +82,7 @@ export function PageView({
         />
         <Editor
           key={page.id}
+          pageId={page.id}
           initialContent={(page.content as PartialBlock[] | null) ?? undefined}
           onChange={handleContentChange}
         />

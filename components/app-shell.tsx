@@ -20,6 +20,18 @@ export function AppShell({
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        // Don't steal Cmd/Ctrl+K from text editing (BlockNote uses it to add a
+        // link) or from form fields.
+        const t = e.target as HTMLElement | null;
+        if (
+          t &&
+          (t.isContentEditable ||
+            t.closest("[contenteditable='true']") ||
+            t.tagName === "INPUT" ||
+            t.tagName === "TEXTAREA")
+        ) {
+          return;
+        }
         e.preventDefault();
         setPaletteOpen((v) => !v);
       }

@@ -87,12 +87,14 @@ export async function searchPages(
 ): Promise<Page[]> {
   const q = query.trim();
   if (!q) return [];
+  // Escape LIKE metacharacters so they match literally.
+  const escaped = q.replace(/[\\%_]/g, "\\$&");
   const { data, error } = await db()
     .from("pages")
     .select("*")
     .eq("workspace_id", workspaceId)
     .is("deleted_at", null)
-    .ilike("title", `%${q}%`)
+    .ilike("title", `%${escaped}%`)
     .order("updated_at", { ascending: false })
     .limit(25);
 
@@ -213,6 +215,23 @@ export async function uploadCover(
 
 export async function removeCover(pageId: string): Promise<void> {
   await clearCoverFiles(pageId);
+}
+
+// --- In-page media upload (images, files, video) for the editor ------------
+
+export async function uploadMedia(
+  pageId: string,
+  file: File,
+): Promise<string> {
+  const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_").slice(-80);
+  const path = `${pageId}/${Date.now()}-${safeName}`;
+  const { error } = await db()
+    .storage.from("media")
+    .upload(path, file, { upsert: false });
+  if (error) throw error;
+
+  const { data } = db().storage.from("media").getPublicUrl(path);
+  return data.publicUrl;
 }
 
 export async function signOut() {

@@ -98,7 +98,12 @@ export function PageHeader({
             </button>
             <button
               onClick={async () => {
-                await removeCover(page.id);
+                // Clear the reference regardless; object cleanup is best-effort.
+                try {
+                  await removeCover(page.id);
+                } catch {
+                  // ignore storage errors — the cover_url is what matters
+                }
                 updatePage.mutate({ id: page.id, patch: { cover_url: null } });
               }}
               className="rounded bg-background/80 px-2 py-1 text-xs hover:bg-background"

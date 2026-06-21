@@ -33,7 +33,8 @@ Legend: ✅ done · 🟡 partial · ⬜ not started
 | Databases (properties, views, filter/sort) | ⬜ |
 | Realtime collaboration (Yjs) + presence | ⬜ |
 | Comments, mentions, sharing / public pages | ⬜ |
-| Media uploads, advanced blocks | ⬜ |
+| Media uploads (image/file/video) + rich block set | ✅ |
+| Embeds/bookmarks, callout, columns, code highlight | ⬜ |
 | Export, templates, mobile polish | ⬜ |
 
 ---
@@ -106,13 +107,16 @@ Design rules (carry forward):
 - ✅ Favorite toggle uses **upsert** (no PK error on rapid clicks); sign-out
   **clears the query cache**.
 
-### Phase 6 — Rich blocks & media
-- ⬜ Image / file / video upload via Supabase Storage (BlockNote upload handler).
-- ⬜ Bookmarks & link previews; embeds (YouTube, etc.).
-- ⬜ Callout, toggle, code (syntax highlight), tables, columns, dividers,
-  to-do — verify/extend BlockNote's set; add custom blocks where missing.
-- ⬜ **Slash menu** customization; **`/`** + Markdown shortcut coverage.
-- ⬜ Block actions: duplicate, turn-into, color, move (drag handle).
+### Phase 6 — Rich blocks & media 🟡 (core done)
+- ✅ Image / file / video / audio upload via Supabase Storage (`media` bucket +
+  BlockNote `uploadFile` handler; path-scoped RLS).
+- ✅ Default block set wired: headings, bulleted/numbered/check (to-do) lists,
+  toggle lists, quote, code block, divider, tables — all via BlockNote.
+- ✅ **Slash menu** + Markdown input shortcuts (BlockNote built-in).
+- ✅ Block actions: drag handle, duplicate, turn-into, color (BlockNote side menu).
+- ⬜ Bookmarks & link previews; embeds (YouTube, etc.) — custom blocks, follow-up.
+- ⬜ Callout & multi-column layout — need custom block / `xl-multi-column`.
+- ⬜ Code-block **syntax highlighting** (Shiki) — follow-up.
 
 ### Phase 7 — Databases (largest phase) ⭐
 Build incrementally; ship the Table view first.
