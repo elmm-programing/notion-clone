@@ -8,13 +8,16 @@ import {
   createDatabase,
   createDbProperty,
   createDbRow,
+  createDbView,
   createPage,
   deleteDbProperty,
+  deleteDbView,
   getPage,
   hardDeletePage,
   listDbProperties,
   listDbRows,
   listDbValues,
+  listDbViews,
   listFavoriteIds,
   listPages,
   listTrashed,
@@ -25,9 +28,16 @@ import {
   setDbValue,
   softDeletePage,
   updateDbProperty,
+  updateDbView,
   updatePage,
 } from "@/lib/queries";
-import type { DbProperty, DbPropertyType, Json, Page } from "@/types/database";
+import type {
+  DbProperty,
+  DbPropertyType,
+  DbView,
+  Json,
+  Page,
+} from "@/types/database";
 
 export function usePages(workspaceId: string | null) {
   return useQuery({
@@ -155,6 +165,45 @@ export function useSearch(workspaceId: string | null, query: string) {
 }
 
 // --- Databases ------------------------------------------------------------
+
+export function useDbViews(dbPageId: string) {
+  return useQuery({
+    queryKey: ["db_views", dbPageId],
+    queryFn: () => listDbViews(dbPageId),
+    enabled: !!dbPageId,
+  });
+}
+
+export function useCreateDbView(dbPageId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ type, name }: { type: DbView["type"]; name: string }) =>
+      createDbView(dbPageId, type, name),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["db_views", dbPageId] }),
+  });
+}
+
+export function useUpdateDbView(dbPageId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      id,
+      patch,
+    }: {
+      id: string;
+      patch: Partial<Pick<DbView, "name" | "type" | "config">>;
+    }) => updateDbView(id, patch),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["db_views", dbPageId] }),
+  });
+}
+
+export function useDeleteDbView(dbPageId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => deleteDbView(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["db_views", dbPageId] }),
+  });
+}
 
 export function useDbProperties(dbPageId: string) {
   return useQuery({

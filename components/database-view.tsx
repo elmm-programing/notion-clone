@@ -1,36 +1,49 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
-import { Plus, Trash2 } from "lucide-react";
+import {
+  Filter as FilterIcon,
+  LayoutGrid,
+  Plus,
+  Table as TableIcon,
+  X,
+} from "lucide-react";
 import {
   useCreateDbProperty,
   useCreateDbRow,
+  useCreateDbView,
   useDbProperties,
   useDbRows,
   useDbValues,
+  useDbViews,
   useDeleteDbProperty,
+  useDeleteDbView,
   useDeletePage,
   useSetDbValue,
   useUpdateDbProperty,
+  useUpdateDbView,
 } from "@/lib/hooks";
 import { updatePage } from "@/lib/queries";
+import {
+  applyFilters,
+  applySorts,
+  TITLE_PROP,
+  type DbFilter,
+  type DbFilterOp,
+  type ValueMap,
+  type ViewConfig,
+} from "@/lib/db";
+import { TableView } from "@/components/table-view";
+import { BoardView } from "@/components/board-view";
 import type {
   DbProperty,
   DbPropertyType,
+  DbView,
   Json,
   Page,
 } from "@/types/database";
-
-const TYPE_LABELS: Record<DbPropertyType, string> = {
-  text: "Text",
-  number: "Number",
-  select: "Select",
-  checkbox: "Checkbox",
-  date: "Date",
-  url: "URL",
-};
 
 export function DatabaseView({
   dbPage,
@@ -42,11 +55,15 @@ export function DatabaseView({
   const router = useRouter();
   const qc = useQueryClient();
 
+  const { data: views = [] } = useDbViews(dbPage.id);
   const { data: properties = [] } = useDbProperties(dbPage.id);
   const { data: rows = [] } = useDbRows(dbPage.id);
   const rowIds = useMemo(() => rows.map((r) => r.id), [rows]);
   const { data: values = [] } = useDbValues(dbPage.id, rowIds);
 
+  const createView = useCreateDbView(dbPage.id);
+  const updateView = useUpdateDbView(dbPage.id);
+  const deleteView = useDeleteDbView(dbPage.id);
   const createProperty = useCreateDbProperty(dbPage.id);
   const updateProperty = useUpdateDbProperty(dbPage.id);
   const deleteProperty = useDeleteDbProperty(dbPage.id);
@@ -54,11 +71,68 @@ export function DatabaseView({
   const deleteRow = useDeletePage(workspaceId);
   const setValue = useSetDbValue(dbPage.id);
 
-  const valueMap = useMemo(() => {
-    const map = new Map<string, Json | null>();
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const [showFilters, setShowFilters] = useState(false);
+
+  useEffect(() => {
+    if (views.length && !views.find((v) => v.id === activeId)) {
+      setActiveId(views[0].id);
+    }
+  }, [views, activeId]);
+
+  const active = views.find((v) => v.id === activeId) ?? null;
+  const config = (active?.config ?? {}) as ViewConfig;
+
+  const valueMap: ValueMap = useMemo(() => {
+    const map: ValueMap = new Map();
     for (const v of values) map.set(`${v.page_id}:${v.property_id}`, v.value);
     return map;
   }, [values]);
+
+  const filtered = useMemo(
+    () => applyFilters(rows, config.filters ?? [], valueMap),
+    [rows, config.filters, valueMap],
+  );
+  const sorted = useMemo(
+    () => applySorts(filtered, config.sorts ?? [], valueMap),
+    [filtered, config.sorts, valueMap],
+  );
+
+  function updateConfig(patch: Partial<ViewConfig>) {
+    if (!active) return;
+    updateView.mutate({
+      id: active.id,
+      patch: {
+        config: { ...config, ...patch } as unknown as DbView["config"],
+      },
+    });
+  }
+
+  function toggleSort(propertyId: string) {
+    const cur = config.sorts?.[0];
+    if (!cur || cur.propertyId !== propertyId) {
+      updateConfig({ sorts: [{ propertyId, dir: "asc" }] });
+    } else if (cur.dir === "asc") {
+      updateConfig({ sorts: [{ propertyId, dir: "desc" }] });
+    } else {
+      updateConfig({ sorts: [] });
+    }
+  }
+
+  function commitValue(row: Page, property: DbProperty, value: Json | null) {
+    setValue.mutate({ rowId: row.id, propertyId: property.id, value });
+    if (property.type === "select" && typeof value === "string" && value) {
+      const options = property.config.options ?? [];
+      if (!options.includes(value)) {
+        updateProperty.mutate({
+          id: property.id,
+          patch: {
+            config: { ...property.config, options: [...options, value] },
+          },
+        });
+      }
+    }
+  }
 
   async function handleRowTitle(rowId: string, title: string) {
     await updatePage(rowId, { title });
@@ -66,290 +140,270 @@ export function DatabaseView({
     qc.invalidateQueries({ queryKey: ["pages", workspaceId] });
   }
 
-  function commitValue(row: Page, property: DbProperty, value: Json | null) {
-    setValue.mutate({ rowId: row.id, propertyId: property.id, value });
-    // For select, remember new options on the property.
-    if (property.type === "select" && typeof value === "string" && value) {
-      const options = property.config.options ?? [];
-      if (!options.includes(value)) {
-        updateProperty.mutate({
-          id: property.id,
-          patch: { config: { ...property.config, options: [...options, value] } },
-        });
-      }
-    }
+  function handleDeleteRow(rowId: string) {
+    deleteRow.mutate(rowId, {
+      onSuccess: () => {
+        qc.invalidateQueries({ queryKey: ["db_rows", dbPage.id] });
+        qc.invalidateQueries({ queryKey: ["db_values", dbPage.id] });
+      },
+    });
   }
 
+  async function createRowInColumn(value: string | null) {
+    const row = await createRow.mutateAsync();
+    const groupProp = properties.find((p) => p.id === config.groupBy);
+    if (groupProp && value != null) commitValue(row, groupProp, value);
+  }
+
+  const selectProperties = properties.filter((p) => p.type === "select");
+  const groupProperty =
+    properties.find((p) => p.id === config.groupBy) ?? null;
+
   return (
-    <div className="mx-auto max-w-5xl px-12 pt-2">
-      <div className="overflow-x-auto">
-        <table className="w-full border-collapse text-sm">
-          <thead>
-            <tr className="border-y border-border text-left text-muted-foreground">
-              <th className="min-w-48 px-2 py-1.5 font-medium">Name</th>
-              {properties.map((property) => (
-                <th
-                  key={property.id}
-                  className="min-w-40 border-l border-border px-2 py-1.5 font-medium"
-                >
-                  <PropertyHeader
-                    property={property}
-                    onRename={(name) =>
-                      updateProperty.mutate({ id: property.id, patch: { name } })
-                    }
-                    onRetype={(type) =>
-                      updateProperty.mutate({ id: property.id, patch: { type } })
-                    }
-                    onDelete={() => deleteProperty.mutate(property.id)}
-                  />
-                </th>
-              ))}
-              <th className="border-l border-border px-2 py-1.5">
-                <button
-                  onClick={() =>
-                    createProperty.mutate({ name: "Property", type: "text" })
-                  }
-                  className="flex items-center gap-1 text-muted-foreground hover:text-foreground"
-                  title="Add property"
-                >
-                  <Plus size={14} />
-                </button>
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((row) => (
-              <tr key={row.id} className="group border-b border-border">
-                <td className="px-2 py-1">
-                  <div className="flex items-center gap-1">
-                    <EditableText
-                      value={row.title}
-                      placeholder="Untitled"
-                      onCommit={(t) => handleRowTitle(row.id, t)}
-                      className="flex-1"
-                    />
-                    <button
-                      onClick={() => router.push(`/page/${row.id}`)}
-                      className="hidden text-xs text-muted-foreground hover:text-foreground group-hover:block"
-                      title="Open as page"
-                    >
-                      Open
-                    </button>
-                    <button
-                      onClick={() =>
-                        deleteRow.mutate(row.id, {
-                          onSuccess: () => {
-                            qc.invalidateQueries({
-                              queryKey: ["db_rows", dbPage.id],
-                            });
-                            qc.invalidateQueries({
-                              queryKey: ["db_values", dbPage.id],
-                            });
-                          },
-                        })
-                      }
-                      className="hidden text-muted-foreground hover:text-red-500 group-hover:block"
-                      title="Delete row"
-                    >
-                      <Trash2 size={13} />
-                    </button>
-                  </div>
-                </td>
-                {properties.map((property) => (
-                  <td
-                    key={property.id}
-                    className="border-l border-border px-2 py-1"
-                  >
-                    <DbCell
-                      property={property}
-                      value={valueMap.get(`${row.id}:${property.id}`) ?? null}
-                      onCommit={(v) => commitValue(row, property, v)}
-                    />
-                  </td>
-                ))}
-                <td className="border-l border-border" />
-              </tr>
-            ))}
-          </tbody>
-        </table>
+    <div className="mx-auto max-w-6xl px-12 pt-2">
+      {/* View tabs */}
+      <div className="mb-2 flex items-center gap-1 border-b border-border">
+        {views.map((view) => (
+          <ViewTab
+            key={view.id}
+            view={view}
+            active={view.id === activeId}
+            canDelete={views.length > 1}
+            onSelect={() => setActiveId(view.id)}
+            onRename={(name) =>
+              updateView.mutate({ id: view.id, patch: { name } })
+            }
+            onDelete={() => {
+              deleteView.mutate(view.id);
+              if (activeId === view.id) setActiveId(null);
+            }}
+          />
+        ))}
+        <button
+          onClick={() =>
+            createView.mutate({ type: "table", name: "Table" })
+          }
+          className="px-1.5 py-1 text-muted-foreground hover:text-foreground"
+          title="Add table view"
+        >
+          <TableIcon size={14} />
+        </button>
+        <button
+          onClick={() =>
+            createView.mutate({ type: "board", name: "Board" })
+          }
+          className="px-1.5 py-1 text-muted-foreground hover:text-foreground"
+          title="Add board view"
+        >
+          <LayoutGrid size={14} />
+        </button>
       </div>
 
-      <button
-        onClick={() => createRow.mutate()}
-        disabled={!workspaceId}
-        className="mt-2 flex items-center gap-1 px-2 py-1.5 text-sm text-muted-foreground hover:text-foreground disabled:opacity-50"
-      >
-        <Plus size={14} /> New row
-      </button>
-    </div>
-  );
-}
+      {/* Toolbar */}
+      <div className="mb-2 flex items-center gap-2 text-xs">
+        <button
+          onClick={() => setShowFilters((v) => !v)}
+          className={`flex items-center gap-1 rounded px-2 py-1 hover:bg-accent ${
+            (config.filters?.length ?? 0) > 0
+              ? "text-foreground"
+              : "text-muted-foreground"
+          }`}
+        >
+          <FilterIcon size={13} /> Filter
+          {(config.filters?.length ?? 0) > 0
+            ? ` (${config.filters!.length})`
+            : ""}
+        </button>
+      </div>
 
-function PropertyHeader({
-  property,
-  onRename,
-  onRetype,
-  onDelete,
-}: {
-  property: DbProperty;
-  onRename: (name: string) => void;
-  onRetype: (type: DbPropertyType) => void;
-  onDelete: () => void;
-}) {
-  const [open, setOpen] = useState(false);
-  return (
-    <div className="relative">
-      <button
-        onClick={() => setOpen((v) => !v)}
-        className="w-full truncate text-left hover:text-foreground"
-      >
-        {property.name}
-      </button>
-      {open && (
-        <>
-          <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
-          <div className="absolute z-20 mt-1 w-52 rounded-md border border-border bg-background p-2 shadow-lg">
-            <input
-              defaultValue={property.name}
-              onBlur={(e) => onRename(e.target.value.trim() || "Property")}
-              className="mb-2 w-full rounded border border-border bg-background px-2 py-1 text-xs outline-none"
-            />
-            <select
-              value={property.type}
-              onChange={(e) => onRetype(e.target.value as DbPropertyType)}
-              className="mb-2 w-full rounded border border-border bg-background px-2 py-1 text-xs outline-none"
-            >
-              {(Object.keys(TYPE_LABELS) as DbPropertyType[]).map((t) => (
-                <option key={t} value={t}>
-                  {TYPE_LABELS[t]}
-                </option>
-              ))}
-            </select>
-            <button
-              onClick={() => {
-                onDelete();
-                setOpen(false);
-              }}
-              className="flex w-full items-center gap-1 rounded px-2 py-1 text-xs text-red-500 hover:bg-accent"
-            >
-              <Trash2 size={12} /> Delete property
-            </button>
-          </div>
-        </>
+      {showFilters && (
+        <FilterBar
+          properties={properties}
+          filters={config.filters ?? []}
+          onChange={(filters) => updateConfig({ filters })}
+        />
+      )}
+
+      {active?.type === "board" ? (
+        <BoardView
+          groupProperty={groupProperty}
+          selectProperties={selectProperties}
+          rows={filtered}
+          valueMap={valueMap}
+          onSetGroupBy={(propertyId) => updateConfig({ groupBy: propertyId })}
+          onMoveCard={(row, value) => {
+            if (groupProperty) commitValue(row, groupProperty, value);
+          }}
+          onOpenRow={(id) => router.push(`/page/${id}`)}
+          onCreateRowInColumn={createRowInColumn}
+        />
+      ) : (
+        <TableView
+          properties={properties}
+          rows={sorted}
+          valueMap={valueMap}
+          sorts={config.sorts ?? []}
+          onToggleSort={toggleSort}
+          onCommitValue={commitValue}
+          onRowTitle={handleRowTitle}
+          onDeleteRow={handleDeleteRow}
+          onOpenRow={(id) => router.push(`/page/${id}`)}
+          onCreateRow={() => createRow.mutate()}
+          onRenameProp={(id, name) =>
+            updateProperty.mutate({ id, patch: { name } })
+          }
+          onRetypeProp={(id, type) =>
+            updateProperty.mutate({ id, patch: { type } })
+          }
+          onDeleteProp={(id) => deleteProperty.mutate(id)}
+          onAddProp={() =>
+            createProperty.mutate({ name: "Property", type: "text" })
+          }
+          canCreate={!!workspaceId}
+        />
       )}
     </div>
   );
 }
 
-function DbCell({
-  property,
-  value,
-  onCommit,
+function ViewTab({
+  view,
+  active,
+  canDelete,
+  onSelect,
+  onRename,
+  onDelete,
 }: {
-  property: DbProperty;
-  value: Json | null;
-  onCommit: (value: Json | null) => void;
+  view: DbView;
+  active: boolean;
+  canDelete: boolean;
+  onSelect: () => void;
+  onRename: (name: string) => void;
+  onDelete: () => void;
 }) {
-  if (property.type === "checkbox") {
-    return (
-      <input
-        type="checkbox"
-        checked={value === true}
-        onChange={(e) => onCommit(e.target.checked)}
-      />
-    );
-  }
-
-  if (property.type === "date") {
-    return (
-      <input
-        type="date"
-        value={typeof value === "string" ? value : ""}
-        onChange={(e) => onCommit(e.target.value || null)}
-        className="w-full bg-transparent text-sm outline-none"
-      />
-    );
-  }
-
-  if (property.type === "number") {
-    return (
-      <EditableText
-        value={value == null ? "" : String(value)}
-        placeholder="Empty"
-        onCommit={(t) => {
-          const n = Number(t);
-          onCommit(t.trim() === "" || Number.isNaN(n) ? null : n);
-        }}
-      />
-    );
-  }
-
-  if (property.type === "select") {
-    const listId = `opts-${property.id}`;
-    return (
-      <>
-        <EditableText
-          value={typeof value === "string" ? value : ""}
-          placeholder="Empty"
-          listId={listId}
-          onCommit={(t) => onCommit(t.trim() === "" ? null : t.trim())}
-        />
-        <datalist id={listId}>
-          {(property.config.options ?? []).map((o) => (
-            <option key={o} value={o} />
-          ))}
-        </datalist>
-      </>
-    );
-  }
-
-  // text & url
+  const [renaming, setRenaming] = useState(false);
   return (
-    <EditableText
-      value={typeof value === "string" ? value : ""}
-      placeholder="Empty"
-      onCommit={(t) => onCommit(t === "" ? null : t)}
-    />
+    <div
+      className={`group flex items-center gap-1 border-b-2 px-2 py-1 text-sm ${
+        active
+          ? "border-foreground text-foreground"
+          : "border-transparent text-muted-foreground"
+      }`}
+    >
+      {renaming ? (
+        <input
+          autoFocus
+          defaultValue={view.name}
+          onBlur={(e) => {
+            onRename(e.target.value.trim() || view.name);
+            setRenaming(false);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+          }}
+          className="w-24 rounded border border-border bg-background px-1 text-sm outline-none"
+        />
+      ) : (
+        <button onClick={onSelect} onDoubleClick={() => setRenaming(true)}>
+          {view.name}
+        </button>
+      )}
+      {canDelete && (
+        <button
+          onClick={onDelete}
+          className="hidden text-muted-foreground hover:text-red-500 group-hover:block"
+          title="Delete view"
+        >
+          <X size={12} />
+        </button>
+      )}
+    </div>
   );
 }
 
-function EditableText({
-  value,
-  placeholder,
-  onCommit,
-  className,
-  listId,
+const OPS: { value: DbFilterOp; label: string; needsValue: boolean }[] = [
+  { value: "contains", label: "contains", needsValue: true },
+  { value: "equals", label: "is", needsValue: true },
+  { value: "empty", label: "is empty", needsValue: false },
+  { value: "not_empty", label: "is not empty", needsValue: false },
+  { value: "checked", label: "is checked", needsValue: false },
+  { value: "unchecked", label: "is unchecked", needsValue: false },
+];
+
+function FilterBar({
+  properties,
+  filters,
+  onChange,
 }: {
-  value: string;
-  placeholder?: string;
-  onCommit: (value: string) => void;
-  className?: string;
-  listId?: string;
+  properties: DbProperty[];
+  filters: DbFilter[];
+  onChange: (filters: DbFilter[]) => void;
 }) {
-  const [draft, setDraft] = useState(value);
-  // Resync when the persisted value changes externally.
-  const [lastValue, setLastValue] = useState(value);
-  if (value !== lastValue) {
-    setLastValue(value);
-    setDraft(value);
+  function update(i: number, patch: Partial<DbFilter>) {
+    onChange(filters.map((f, idx) => (idx === i ? { ...f, ...patch } : f)));
+  }
+  function remove(i: number) {
+    onChange(filters.filter((_, idx) => idx !== i));
+  }
+  function add() {
+    const first = properties[0]?.id ?? TITLE_PROP;
+    onChange([...filters, { propertyId: first, op: "contains", value: "" }]);
   }
 
   return (
-    <input
-      value={draft}
-      list={listId}
-      placeholder={placeholder}
-      onChange={(e) => setDraft(e.target.value)}
-      onBlur={() => {
-        if (draft !== value) onCommit(draft);
-      }}
-      onKeyDown={(e) => {
-        if (e.key === "Enter") (e.target as HTMLInputElement).blur();
-      }}
-      className={
-        "w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground/40 " +
-        (className ?? "")
-      }
-    />
+    <div className="mb-3 space-y-2 rounded-md border border-border p-2">
+      {filters.map((f, i) => {
+        const op = OPS.find((o) => o.value === f.op);
+        return (
+          <div key={i} className="flex items-center gap-2 text-xs">
+            <select
+              value={f.propertyId}
+              onChange={(e) => update(i, { propertyId: e.target.value })}
+              className="rounded border border-border bg-background px-2 py-1 outline-none"
+            >
+              <option value={TITLE_PROP}>Name</option>
+              {properties.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
+            <select
+              value={f.op}
+              onChange={(e) =>
+                update(i, { op: e.target.value as DbFilterOp })
+              }
+              className="rounded border border-border bg-background px-2 py-1 outline-none"
+            >
+              {OPS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+            {op?.needsValue && (
+              <input
+                value={f.value ?? ""}
+                onChange={(e) => update(i, { value: e.target.value })}
+                placeholder="value"
+                className="rounded border border-border bg-background px-2 py-1 outline-none"
+              />
+            )}
+            <button
+              onClick={() => remove(i)}
+              className="text-muted-foreground hover:text-red-500"
+            >
+              <X size={13} />
+            </button>
+          </div>
+        );
+      })}
+      <button
+        onClick={add}
+        className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+      >
+        <Plus size={12} /> Add filter
+      </button>
+    </div>
   );
 }

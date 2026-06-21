@@ -30,8 +30,8 @@ Legend: ✅ done · 🟡 partial · ⬜ not started
 | Breadcrumbs, trash UI, favorites | ✅ |
 | Sidebar drag-reorder (same level) + inline rename | ✅ |
 | Search + Cmd-K quick switcher + recents | ✅ |
-| Databases: properties + editable Table view | ✅ |
-| Database filter/sort/group + Board/Gallery/Calendar views | ⬜ |
+| Databases: properties, Table + Board views, filter/sort | ✅ |
+| Gallery/List/Calendar views, grouping in table, relations | ⬜ |
 | Realtime collaboration (Yjs) + presence | ⬜ |
 | Comments, mentions, sharing / public pages | ⬜ |
 | Media uploads (image/file/video) + rich block set | ✅ |
@@ -119,7 +119,7 @@ Design rules (carry forward):
 - ⬜ Callout & multi-column layout — need custom block / `xl-multi-column`.
 - ⬜ Code-block **syntax highlighting** (Shiki) — follow-up.
 
-### Phase 7 — Databases (largest phase) 🟡 (Table view done) ⭐
+### Phase 7 — Databases (largest phase) 🟡 (Table + Board, filter/sort) ⭐
 Building incrementally; Table view shipped first.
 - ✅ Create a database page (sidebar "New database"); **property schema editor**
   (add, rename, change type, delete) via the column header menu.
@@ -127,11 +127,13 @@ Building incrementally; Table view shipped first.
   *(multi-select, person, files, created/edited time still ⬜)*
 - ✅ **Table view**: inline-editable cells per type, add/delete rows (rows are
   child pages), open a row as a full page. Select remembers its options.
-- ⬜ **Filter / sort / group**, column show-hide & resize — persisted per view.
-- ⬜ **Board (Kanban)** view (group by select; dnd-kit columns).
+- ✅ **Filter / sort** — persisted per view (filter bar + click-to-sort columns).
+- ✅ **Board (Kanban)** view: group by a select property, drag cards between
+  columns (dnd-kit) to set the value, add cards per column.
+- ✅ Multiple saved views per database + **view switcher** (table/board, add,
+  rename, delete).
+- ⬜ Table **grouping**, column show-hide & resize.
 - ⬜ **Gallery**, **List**, **Calendar** views.
-- ⬜ Multiple saved views per database; view switcher. *(schema/`db_views`
-  table seeded; switcher UI pending.)*
 - ⬜ *(Stretch)* relations, rollups, formulas.
 
 ### Phase 8 — Realtime collaboration

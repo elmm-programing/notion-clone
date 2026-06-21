@@ -3,6 +3,7 @@ import type {
   DbProperty,
   DbPropertyType,
   DbValue,
+  DbView,
   Json,
   Page,
 } from "@/types/database";
@@ -269,6 +270,43 @@ export async function createDatabase(input: {
     .insert({ page_id: page.id, name: "Status", type: "select" });
   if (propErr) throw propErr;
   return page;
+}
+
+export async function listDbViews(dbPageId: string): Promise<DbView[]> {
+  const { data, error } = await db()
+    .from("db_views")
+    .select("*")
+    .eq("page_id", dbPageId)
+    .order("position", { ascending: true });
+  if (error) throw error;
+  return data as DbView[];
+}
+
+export async function createDbView(
+  dbPageId: string,
+  type: DbView["type"],
+  name: string,
+): Promise<DbView> {
+  const { data, error } = await db()
+    .from("db_views")
+    .insert({ page_id: dbPageId, type, name })
+    .select("*")
+    .single();
+  if (error) throw error;
+  return data as DbView;
+}
+
+export async function updateDbView(
+  id: string,
+  patch: Partial<Pick<DbView, "name" | "type" | "config">>,
+): Promise<void> {
+  const { error } = await db().from("db_views").update(patch).eq("id", id);
+  if (error) throw error;
+}
+
+export async function deleteDbView(id: string): Promise<void> {
+  const { error } = await db().from("db_views").delete().eq("id", id);
+  if (error) throw error;
 }
 
 export async function listDbProperties(
