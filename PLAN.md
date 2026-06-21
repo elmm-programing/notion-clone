@@ -1,219 +1,173 @@
-# Notion Clone — Implementation Plan
+# Notion Clone — Complete Build Plan
 
-> **Current state:** The repository contains only `README.md`. There is **no source code yet**.
-> This is a greenfield build. The intended stack (per README) is **React + Supabase**.
+> **Goal:** build a full Notion clone — pages, a block editor, databases with
+> multiple views, realtime collaboration, sharing, and search.
 >
-> This document compares Notion's real feature set against "nothing built yet" and lays out
-> a phased plan to get from zero to a credible Notion clone.
+> **Stack (locked):** Next.js 16 (App Router) · React 19 · TypeScript ·
+> Supabase (Postgres + Auth + Storage + Realtime + RLS) · BlockNote (Tiptap/
+> ProseMirror) · Yjs (CRDT) · TanStack Query · Tailwind v4 · next-themes ·
+> dnd-kit · Zustand.
+>
+> **Status today:** the foundation (Phases 0–3) is largely built and the app
+> compiles. This document tracks what's done and details every remaining phase
+> through to a complete clone.
+
+Legend: ✅ done · 🟡 partial · ⬜ not started
 
 ---
 
-## 1. Target Stack (finalized)
+## 1. Where we are
 
-Chosen for two stated priorities: **(1) Notion-style databases/tables** and
-**(2) public "publish-to-web" pages**.
-
-| Concern | Choice | Notes |
-| --- | --- | --- |
-| Framework | **Next.js 15 (App Router) + React 19** | SSR/SEO for public shared pages. |
-| Language | **TypeScript** | Non-negotiable for the block/database model. |
-| Backend / DB | **Supabase** (Postgres + Auth + Storage + Realtime + RLS) | Postgres is the priority: database filters/sorts/relations/rollups map directly to SQL. |
-| Editor | **BlockNote** (built on Tiptap/ProseMirror) ⭐ | Notion-style block editor out of the box — slash menu, drag handles, nested blocks, built-in Yjs collab. The single biggest time-saver. |
-| Realtime collab | **Yjs (CRDT)** via BlockNote, synced over Supabase Realtime (or y-sweet/PartyKit at scale) | CRDT removes manual conflict resolution. |
-| State / data | **TanStack Query** + generated Supabase types; **Zustand** for local UI state | Typed server cache + light UI state. |
-| Styling | **Tailwind CSS v4** + **shadcn/ui** (Radix) | Accessible menus, modals, popovers. |
-| Drag & drop | **dnd-kit** | Block reorder, board columns, sidebar tree, gallery. |
-| Routing | Next.js App Router | Public pages SSR; app pages client-rendered. |
-
-> **Why this over the original "React + Vite + Supabase":** added **BlockNote**
-> (don't hand-roll the editor or even raw Tiptap), switched **Vite → Next.js** for
-> public-page SSR, and made **Yjs** an explicit collaboration layer. Supabase/Postgres
-> retained deliberately because the database/tables feature was the top priority.
+| Capability | Status |
+| --- | --- |
+| Next.js + TS + Tailwind v4 scaffold, dark mode | ✅ |
+| Supabase clients (browser/server/middleware) + auth guard | ✅ |
+| Email/password auth (sign up / in / out) | ✅ |
+| Postgres schema + RLS + signup trigger (workspaces, members, pages) | ✅ |
+| Sidebar nested page tree (create / subpage / delete) | ✅ |
+| BlockNote editor: title + blocks + debounced autosave | ✅ |
+| Page icons / cover images | ⬜ |
+| Breadcrumbs, trash UI, favorites, search | ⬜ |
+| Databases (properties, views, filter/sort) | ⬜ |
+| Realtime collaboration (Yjs) + presence | ⬜ |
+| Comments, mentions, sharing / public pages | ⬜ |
+| Media uploads, advanced blocks | ⬜ |
+| Export, templates, mobile polish | ⬜ |
 
 ---
 
-## 2. Notion Feature Inventory vs. This Repo
+## 2. Data model
 
-Legend: ❌ Not started (everything is, today) · 🟡 Partial · ✅ Done
+Current tables (`supabase/migrations/0001_init.sql`): `profiles`, `workspaces`,
+`workspace_members`, `pages` (with `content jsonb` holding the BlockNote
+document), plus the `is_workspace_member()` RLS helper and the
+`handle_new_user()` signup trigger.
 
-### Core editing
-| Feature | Status |
-| --- | --- |
-| Rich text (bold, italic, underline, strike, code, color, link) | ❌ |
-| Block-based editor (paragraph, headings H1–H3) | ❌ |
-| Slash (`/`) command menu to insert blocks | ❌ |
-| Lists: bulleted, numbered, to-do (checkbox), toggle | ❌ |
-| Quote, callout, divider, code block (syntax highlight) | ❌ |
-| Drag-to-reorder blocks; nested blocks / indentation | ❌ |
-| Block actions menu (duplicate, delete, turn into, color) | ❌ |
-| Markdown shortcuts (`#`, `-`, `>`, ` ``` `) | ❌ |
-| Images, video, files, bookmarks, embeds | ❌ |
-| Tables (simple) and columns layout | ❌ |
-| Math/LaTeX equations | ❌ |
-
-### Pages & structure
-| Feature | Status |
-| --- | --- |
-| Nested pages (page-in-page hierarchy) | ❌ |
-| Sidebar tree with expand/collapse, drag reorder | ❌ |
-| Page icon (emoji) + cover image | ❌ |
-| Breadcrumbs | ❌ |
-| Favorites / pinned pages | ❌ |
-| Trash / soft delete + restore | ❌ |
-| Quick search / quick switcher (Cmd-K) | ❌ |
-| Page templates | ❌ |
-
-### Databases (Notion's biggest feature)
-| Feature | Status |
-| --- | --- |
-| Database concept (collection of pages w/ properties) | ❌ |
-| Property types: text, number, select, multi-select, date, checkbox, URL, etc. | ❌ |
-| Views: Table, Board (Kanban), List, Calendar, Gallery, Timeline | ❌ |
-| Filter, sort, group | ❌ |
-| Relations & rollups | ❌ |
-| Formulas | ❌ |
-
-### Collaboration & accounts
-| Feature | Status |
-| --- | --- |
-| Auth (sign up / login) | ❌ |
-| Workspaces & membership | ❌ |
-| Realtime multiplayer editing + presence | ❌ |
-| Sharing / permissions (view/edit, public links) | ❌ |
-| Comments & mentions | ❌ |
-| Version history | ❌ |
-
-### Polish
-| Feature | Status |
-| --- | --- |
-| Dark mode | ❌ |
-| Keyboard shortcuts | ❌ |
-| Mobile responsive | ❌ |
-| Offline / optimistic updates | ❌ |
-| Export (Markdown/PDF) | ❌ |
-
-**Summary: 0% built.** The plan below sequences this into shippable milestones.
-
----
-
-## 3. Data Model (Supabase / Postgres)
-
-Notion is fundamentally a tree of **blocks**. Pages are just blocks. Recommended schema:
+Tables to add as we go (each in its own numbered migration):
 
 ```sql
--- Workspaces & membership
-workspaces        (id, name, icon, created_at, owner_id)
-workspace_members (workspace_id, user_id, role)              -- owner/admin/member/guest
+-- Favorites / pinned pages
+favorites (user_id, page_id, created_at, primary key (user_id, page_id))
 
--- Pages (a page is a block with type='page', but a pages table simplifies navigation)
-pages (
-  id uuid pk,
-  workspace_id uuid,
-  parent_id uuid null,          -- nested pages (self-reference)
-  title text,
-  icon text,                    -- emoji or url
-  cover_url text,
-  is_database boolean default false,
-  created_by uuid, created_at, updated_at,
-  deleted_at timestamptz null   -- soft delete (trash)
-)
+-- Database feature -------------------------------------------------------
+-- A "database" is a page with is_database = true. Its rows are also pages
+-- (parent_id = the database page). Schema + values + views live here:
+db_properties (id, page_id /*the db*/, name, type, config jsonb, position)
+db_values     (page_id /*the row*/, property_id, value jsonb,
+               primary key (page_id, property_id))
+db_views      (id, page_id /*the db*/, type, name, config jsonb, position)
+--   type: table | board | gallery | list | calendar
+--   config: { filters[], sorts[], groupBy, visibleProps[], ... }
 
--- Blocks (the document content tree)
-blocks (
-  id uuid pk,
-  page_id uuid,
-  parent_block_id uuid null,    -- nesting (toggles, columns, list items)
-  type text,                    -- paragraph|heading|todo|bulleted|image|code|...
-  content jsonb,                -- rich text spans + type-specific props
-  position numeric,             -- fractional indexing for cheap reorder
-  created_at, updated_at
-)
+-- Collaboration ----------------------------------------------------------
+comments     (id, page_id, block_id, author_id, body, resolved, created_at)
+page_shares  (page_id, principal /*user or 'public'*/, role, created_at)
+public_links (page_id, slug unique, enabled, created_at)
+yjs_documents(page_id, state bytea, updated_at)   -- Yjs CRDT snapshot
 
--- Databases
-db_properties (id, page_id, name, type, config jsonb, position)
-db_rows       -- each row IS a page; values stored as:
-db_values     (page_id, property_id, value jsonb)
-db_views      (id, page_id, type, name, config jsonb)   -- filters/sorts/groups
-
--- Collaboration
-comments  (id, block_id|page_id, author_id, body, resolved, created_at)
-favorites (user_id, page_id)
+-- History (optional) -----------------------------------------------------
+page_snapshots (id, page_id, content jsonb, created_by, created_at)
 ```
 
-Key decisions:
-- **Fractional indexing** (`position` as fraction/string) for O(1) reorders without renumbering.
-- **Row-Level Security (RLS)** on every table keyed off workspace membership — non-negotiable with Supabase.
-- Store rich text as a **spans array** in `content` jsonb (text + marks), Tiptap-compatible.
+Design rules (carry forward):
+- **RLS on every table**, keyed off `is_workspace_member()` (SECURITY DEFINER to
+  avoid recursion); public read paths gated by `public_links.enabled`.
+- **Fractional `position`** for cheap reordering (pages, properties, views, rows).
+- Regenerate `types/database.ts` after each migration. Rows must be `type`
+  aliases (not `interface`) or supabase-js infers `never`.
 
 ---
 
-## 4. Phased Roadmap
+## 3. Roadmap to a complete clone
 
-### Phase 0 — Project foundation (1–2 days)
-- Scaffold Vite + React + TS + Tailwind; ESLint/Prettier.
-- Supabase project: env vars, client, generated types.
-- App shell: sidebar + main panel layout, routing, dark mode toggle.
+### Phase 4 — Page polish & navigation (next up)
+- ⬜ Emoji **icon picker** + **cover image** (Supabase Storage) on page header.
+- ⬜ **Breadcrumbs** from the page ancestry.
+- ⬜ **Trash**: list soft-deleted pages, restore, permanent delete.
+- ⬜ **Favorites**: pin pages to a sidebar section (`favorites` table).
+- ⬜ Sidebar **drag-to-reorder & re-parent** (dnd-kit + fractional `position`).
+- ⬜ Inline title editing in the sidebar; "Untitled" placeholders.
 
-### Phase 1 — Auth & workspaces (2–3 days)
-- Supabase Auth (email/password + OAuth optional).
-- Create default workspace on signup; protected routes.
-- RLS policies for workspaces/members.
+### Phase 5 — Search & quick switcher
+- ⬜ Postgres full-text search (`tsvector` over title + content text) with a
+  `search_pages()` RPC.
+- ⬜ **Cmd-K** quick switcher (fuzzy page jump, recent pages, "create page").
+- ⬜ Recent-pages tracking.
 
-### Phase 2 — Pages & sidebar (3–4 days)
-- CRUD pages; nested page tree in sidebar (expand/collapse).
-- Page header: editable title, emoji icon picker, cover image.
-- Breadcrumbs; soft-delete to Trash + restore.
+### Phase 6 — Rich blocks & media
+- ⬜ Image / file / video upload via Supabase Storage (BlockNote upload handler).
+- ⬜ Bookmarks & link previews; embeds (YouTube, etc.).
+- ⬜ Callout, toggle, code (syntax highlight), tables, columns, dividers,
+  to-do — verify/extend BlockNote's set; add custom blocks where missing.
+- ⬜ **Slash menu** customization; **`/`** + Markdown shortcut coverage.
+- ⬜ Block actions: duplicate, turn-into, color, move (drag handle).
 
-### Phase 3 — Block editor (core) (1–2 weeks) ← the heart of the app
-- Integrate **Tiptap** (or build a block list with contentEditable).
-- Block types: paragraph, H1–H3, bulleted/numbered/to-do lists, quote, divider, code.
-- Slash `/` menu + Markdown input shortcuts.
-- Block hover handle: drag-reorder (dnd-kit), block actions menu, "turn into".
-- Persist blocks to Supabase with debounced/optimistic saves.
+### Phase 7 — Databases (largest phase) ⭐
+Build incrementally; ship the Table view first.
+- ⬜ Create a database page; **property schema editor** (add/rename/reorder/delete).
+- ⬜ Property types: text, number, select, multi-select, date, checkbox, URL,
+  person, files, created/edited time.
+- ⬜ **Table view**: editable cells, add/delete rows (rows are pages), open row
+  as a full page.
+- ⬜ **Filter / sort / group**, column show-hide & resize — persisted per view.
+- ⬜ **Board (Kanban)** view (group by select; dnd-kit columns).
+- ⬜ **Gallery**, **List**, **Calendar** views.
+- ⬜ Multiple saved views per database; view switcher.
+- ⬜ *(Stretch)* relations, rollups, formulas.
 
-### Phase 4 — Rich media & advanced blocks (1 week)
-- Image/file upload via Supabase Storage; bookmarks/embeds.
-- Toggle (collapsible), callout, nested blocks/indentation.
-- Code block syntax highlighting; simple tables; columns layout.
+### Phase 8 — Realtime collaboration
+- ⬜ Integrate **Yjs** with BlockNote (`@blocknote/core` collaboration option).
+- ⬜ Sync provider: Supabase Realtime broadcast (or y-sweet / PartyKit / a
+  Hocuspocus server for scale); persist Yjs state to `yjs_documents`.
+- ⬜ **Presence**: live cursors + avatars of active editors.
+- ⬜ Conflict-free multi-client editing; offline catch-up on reconnect.
 
-### Phase 5 — Search & navigation (3–4 days)
-- Cmd-K quick switcher; full-text search (Postgres `tsvector`).
-- Favorites/pinned pages; recent pages.
+### Phase 9 — Sharing, permissions & comments
+- ⬜ Per-page **sharing** (invite workspace members; view/comment/edit roles).
+- ⬜ **Public links**: read-only published pages (SSR route, no auth) via
+  `public_links` + relaxed RLS.
+- ⬜ **Comments** on blocks/pages; resolve threads.
+- ⬜ **@mentions** of people and pages; basic notifications.
+- ⬜ Workspace **member management** & invites.
 
-### Phase 6 — Databases (2–3 weeks) ← second-biggest effort
-- Database pages + property schema editor.
-- **Table view** first (the foundation), then **Board (Kanban)** and **Gallery**.
-- Filter / sort / group; then Calendar/List views.
-- (Stretch) relations, rollups, formulas.
-
-### Phase 7 — Collaboration (1–2 weeks)
-- Realtime sync via Supabase Realtime (broadcast/postgres changes) + presence cursors.
-- Comments & @mentions; sharing/permissions, public read-only links.
-- (Stretch) version history.
-
-### Phase 8 — Polish (ongoing)
-- Keyboard shortcuts, mobile responsiveness, export (Markdown/PDF),
-  templates, offline/optimistic refinements, performance (virtualized lists).
+### Phase 10 — Productivity & polish
+- ⬜ **Templates** (page + database templates; "duplicate as template").
+- ⬜ **Export**: Markdown and PDF; import from Markdown.
+- ⬜ *(Optional)* **Version history** via `page_snapshots`.
+- ⬜ Full **keyboard shortcuts**; command palette actions.
+- ⬜ **Mobile-responsive** layout; collapsible sidebar.
+- ⬜ Performance: virtualized long pages/tables, optimistic updates everywhere.
+- ⬜ Accessibility pass; empty states; error/loading boundaries.
 
 ---
 
-## 5. Suggested MVP
+## 4. Suggested order & milestones
 
-To get something demoable fast, target **Phases 0–3**:
-*Auth → workspace → nested pages in a sidebar → a working block editor with slash
-commands and drag-reorder, persisted to Supabase.*
-
-That alone reads as "a Notion clone." Databases (Phase 6) and realtime collab (Phase 7)
-are what make it *compelling* — schedule them next.
+1. **M1 — "A polished notebook"**: Phases 4 + 5. Pages feel complete; you can
+   navigate, search, and organize. *(small)*
+2. **M2 — "Rich content"**: Phase 6. Real Notion-like editing with media. *(medium)*
+3. **M3 — "Databases"**: Phase 7. The defining Notion feature. *(large)*
+4. **M4 — "Multiplayer"**: Phases 8 + 9. Realtime + sharing make it compelling. *(large)*
+5. **M5 — "Production polish"**: Phase 10. *(ongoing)*
 
 ---
 
-## 6. Biggest Risks / Hard Parts
-1. **The block editor** — reordering, nesting, selection, and slash menu are deceptively
-   complex. Using Tiptap/ProseMirror saves weeks vs. rolling your own contentEditable.
-2. **Databases** — the property/view/filter system is a mini app of its own.
-3. **Realtime collaboration** — conflict resolution; consider Yjs (CRDT) if true
-   concurrent editing is required, otherwise last-write-wins per block is much simpler.
-4. **RLS correctness** — get Supabase policies right early; retrofitting security is painful.
+## 5. Hard parts / risks
+1. **Databases** (Phase 7) — properties + views + filter/sort/group is a mini
+   app; model views as serialized config and compute results with SQL +
+   client-side refinement. Start with Table, generalize from there.
+2. **Realtime** (Phase 8) — CRDT wiring and a durable sync/persistence layer;
+   Supabase Realtime works for moderate scale, a dedicated Yjs server for more.
+3. **RLS for sharing/public pages** (Phase 9) — get policies right; public read
+   must not leak private siblings. Test policies explicitly.
+4. **Editor ↔ DB shape** — keep BlockNote document JSON the source of truth for
+   page bodies; derive plain text for search separately.
+
+---
+
+## 6. Working agreement
+- Each phase = its own migration(s) + typed queries/hooks + UI, kept building
+  green (`npm run build`) before commit.
+- Push to `claude/sharp-allen-ftbfwr`; commits update **PR #1**.
+- Regenerate `types/database.ts` whenever the schema changes.
 </content>
-</invoke>
