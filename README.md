@@ -45,10 +45,21 @@ docker compose --env-file .env.docker up -d --build
 | --- | --- |
 | App | http://localhost:3000 |
 | Supabase API gateway (Kong) | http://localhost:8000 |
-| Studio (DB UI) | http://localhost:3001 |
 | Postgres | localhost:5432 |
 
+Studio (the DB admin UI) is optional and heavier — start it with its profile:
+
+```bash
+docker compose --env-file .env.docker --profile studio up -d
+# Studio → http://localhost:3001
+```
+
 Sign up at http://localhost:3000 (email auto-confirm is on, so no SMTP needed).
+
+> Needs a few GB of free Docker disk for the images. If the `db` container
+> reports `No space left on device` / stays unhealthy, reclaim space with
+> `docker system prune -a --volumes` (and raise the disk size in Docker Desktop
+> → Resources if applicable), then `up` again.
 Tear down with `docker compose --env-file .env.docker down` (add `-v` to also
 wipe the database/storage volumes).
 

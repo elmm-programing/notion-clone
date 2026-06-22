@@ -186,10 +186,12 @@ services:
     volumes:
       - ./supabase/docker/kong.yml:/home/kong/kong.yml:ro,z
 
+  # Studio + meta are heavy and optional. Start them with: --profile studio
   meta:
     image: supabase/postgres-meta:v0.96.6
     container_name: notion-meta
     restart: unless-stopped
+    profiles: ["studio"]
     depends_on:
       db:
         condition: service_healthy
@@ -206,6 +208,7 @@ services:
     image: supabase/studio:2026.06.03-sha-0bca601
     container_name: notion-studio
     restart: unless-stopped
+    profiles: ["studio"]
     ports:
       - "3001:3000"
     depends_on:
