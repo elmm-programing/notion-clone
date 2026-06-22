@@ -1,0 +1,14 @@
+node_modules
+.next
+.git
+.gitignore
+npm-debug.log*
+Dockerfile
+.dockerignore
+docker-compose.yml
+.env
+.env.*
+!.env.local.example
+README.md
+PLAN.md
+supabase/docker/volumes

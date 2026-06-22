@@ -5,8 +5,10 @@ import type { Database } from "@/types/database";
 export async function createClient() {
   const cookieStore = await cookies();
 
+  // Server-side requests can use an internal URL (e.g. the in-cluster gateway
+  // host in Docker); the browser still uses NEXT_PUBLIC_SUPABASE_URL.
   return createServerClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_INTERNAL_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {

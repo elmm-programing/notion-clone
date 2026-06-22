@@ -29,7 +29,36 @@ See [`PLAN.md`](./PLAN.md) for the full feature comparison against Notion and th
 Still to build (see `PLAN.md`): databases/table views, realtime collaboration (Yjs),
 sharing/public pages, comments, embeds/callouts, export.
 
-## Getting started
+## Run everything in Docker (self-hosted Supabase + app)
+
+The fastest way to run the whole thing locally — no Supabase account needed.
+`docker compose` brings up Postgres, Auth (GoTrue), REST (PostgREST), Storage,
+the Kong API gateway, Studio, and the Next.js app, and auto-applies the SQL
+migrations.
+
+```bash
+cp .env.docker.example .env.docker
+docker compose --env-file .env.docker up -d --build
+```
+
+| Service | URL |
+| --- | --- |
+| App | http://localhost:3000 |
+| Supabase API gateway (Kong) | http://localhost:8000 |
+| Studio (DB UI) | http://localhost:3001 |
+| Postgres | localhost:5432 |
+
+Sign up at http://localhost:3000 (email auto-confirm is on, so no SMTP needed).
+Tear down with `docker compose --env-file .env.docker down` (add `-v` to also
+wipe the database/storage volumes).
+
+> The `.env.docker.example` values are the standard Supabase **demo** secrets —
+> fine for localhost, but change `POSTGRES_PASSWORD`, `JWT_SECRET`, and the
+> `ANON_KEY`/`SERVICE_ROLE_KEY` (regenerate the keys for your secret) before
+> exposing this anywhere. Migrations re-run only on a fresh DB volume; to
+> re-apply after changes, `down -v` first or run them manually.
+
+## Getting started (Supabase Cloud + local Node)
 
 ### 1. Create a Supabase project
 
