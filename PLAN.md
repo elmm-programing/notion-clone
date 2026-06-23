@@ -144,9 +144,12 @@ Building incrementally; Table view shipped first.
   document + awareness updates relayed per page; CRDT state persisted to
   `yjs_documents` (loaded on open, debounced save) so docs survive with no peers.
   Late joiners catch up via a `sync-request` broadcast.
-- ✅ **Presence**: live cursors (BlockNote awareness) + active-editor avatars.
-- ✅ Conflict-free multi-client editing (CRDT). New shared docs seed once from
-  the saved snapshot; a JSON snapshot is still written to `pages.content`.
+- ✅ **Presence**: avatar list via **Supabase Presence** (reliable join/leave,
+  survives tab close), live cursors via awareness with heartbeat + stale-state
+  pruning; own awareness announced on join.
+- ✅ Conflict-free multi-client editing (CRDT). New shared docs seed once
+  (atomic DB claim — no double-seed); only the editing client persists
+  (`yjs_documents` + `pages.content` snapshot gated to local edits).
 - ⬜ *(Follow-up)* collaborative **title** (currently last-write-wins) and full
   offline edit queue. Docker self-host includes the `realtime` service; on
   Supabase Cloud Realtime is automatic.

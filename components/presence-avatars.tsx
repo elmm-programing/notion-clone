@@ -6,20 +6,7 @@ import type { CollabProvider, CollabUser } from "@/lib/collab";
 export function PresenceAvatars({ collab }: { collab: CollabProvider }) {
   const [users, setUsers] = useState<CollabUser[]>([]);
 
-  useEffect(() => {
-    const { awareness } = collab;
-    function refresh() {
-      const seen = new Map<string, CollabUser>();
-      for (const state of awareness.getStates().values()) {
-        const u = (state as { user?: CollabUser }).user;
-        if (u?.name) seen.set(`${u.name}:${u.color}`, u);
-      }
-      setUsers([...seen.values()]);
-    }
-    awareness.on("change", refresh);
-    refresh();
-    return () => awareness.off("change", refresh);
-  }, [collab]);
+  useEffect(() => collab.subscribePresence(setUsers), [collab]);
 
   if (users.length === 0) return null;
 

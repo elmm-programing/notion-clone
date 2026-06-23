@@ -3,7 +3,7 @@
 import "@blocknote/core/fonts/inter.css";
 import "@blocknote/mantine/style.css";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useCreateBlockNote } from "@blocknote/react";
 import { BlockNoteView } from "@blocknote/mantine";
 import { useTheme } from "next-themes";
@@ -46,12 +46,12 @@ export default function Editor({
         },
   );
 
-  // Seed a brand-new shared doc once from the page's saved snapshot.
+  // Seed a brand-new shared doc once (only the client that won the seed claim).
   useEffect(() => {
     if (!collab) return;
     let cancelled = false;
-    void collab.loaded.then(() => {
-      if (cancelled) return;
+    void collab.loaded.then((shouldSeed) => {
+      if (cancelled || !shouldSeed) return;
       const frag = collab.doc.getXmlFragment(FRAGMENT);
       if (frag.length === 0 && initialContent && initialContent.length > 0) {
         editor.replaceBlocks(editor.document, initialContent);
@@ -63,12 +63,25 @@ export default function Editor({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [collab, editor]);
 
+  // With collaboration, snapshot to pages.content only on LOCAL edits (remote
+  // updates fire on every client and would otherwise cause write amplification).
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
+  useEffect(() => {
+    if (!collab) return;
+    const handler = (_update: Uint8Array, origin: unknown) => {
+      if (origin !== "remote") onChangeRef.current?.(editor.document);
+    };
+    collab.doc.on("update", handler);
+    return () => collab.doc.off("update", handler);
+  }, [collab, editor]);
+
   return (
     <BlockNoteView
       editor={editor}
       editable={editable}
       theme={resolvedTheme === "dark" ? "dark" : "light"}
-      onChange={() => onChange?.(editor.document)}
+      onChange={collab ? undefined : () => onChange?.(editor.document)}
     />
   );
 }
