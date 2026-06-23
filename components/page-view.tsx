@@ -7,6 +7,8 @@ import { usePage, useUpdatePage } from "@/lib/hooks";
 import { PageHeader } from "@/components/page-header";
 import { DatabaseView } from "@/components/database-view";
 import { PresenceAvatars } from "@/components/presence-avatars";
+import { ShareMenu } from "@/components/share-menu";
+import { CommentsButton } from "@/components/comments-panel";
 import { pushRecent } from "@/lib/recents";
 import {
   createCollabProvider,
@@ -104,11 +106,11 @@ export function PageView({
 
   return (
     <div className="pb-16">
-      {!page.is_database && collab && (
-        <div className="mx-auto flex max-w-3xl justify-end px-12 pt-2">
-          <PresenceAvatars collab={collab} />
-        </div>
-      )}
+      <div className="flex items-center justify-end gap-2 px-12 pt-3">
+        {!page.is_database && collab && <PresenceAvatars collab={collab} />}
+        <CommentsButton pageId={page.id} />
+        <ShareMenu pageId={page.id} title={page.title} />
+      </div>
       <PageHeader page={page} workspaceId={workspaceId} />
       <div className="mx-auto max-w-3xl px-12 pt-2">
         <input

@@ -1,11 +1,13 @@
 import { createClient } from "@/lib/supabase/client";
 import type {
+  Comment,
   DbProperty,
   DbPropertyType,
   DbValue,
   DbView,
   Json,
   Page,
+  PublicLink,
 } from "@/types/database";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database";
@@ -395,6 +397,95 @@ export async function createDbRow(
     .single();
   if (error) throw error;
   return data as Page;
+}
+
+// --- Public links (publish to web) ----------------------------------------
+
+function slugify(title: string): string {
+  const base = (title || "untitled")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "")
+    .slice(0, 48);
+  const rand = Math.random().toString(36).slice(2, 8);
+  return `${base || "page"}-${rand}`;
+}
+
+export async function getPublicLink(pageId: string): Promise<PublicLink | null> {
+  const { data, error } = await db()
+    .from("public_links")
+    .select("*")
+    .eq("page_id", pageId)
+    .maybeSingle();
+  if (error) throw error;
+  return data as PublicLink | null;
+}
+
+export async function setPublished(
+  pageId: string,
+  enabled: boolean,
+  title: string,
+): Promise<PublicLink> {
+  const existing = await getPublicLink(pageId);
+  if (existing) {
+    const { data, error } = await db()
+      .from("public_links")
+      .update({ enabled })
+      .eq("page_id", pageId)
+      .select("*")
+      .single();
+    if (error) throw error;
+    return data as PublicLink;
+  }
+  const { data, error } = await db()
+    .from("public_links")
+    .insert({ page_id: pageId, slug: slugify(title), enabled })
+    .select("*")
+    .single();
+  if (error) throw error;
+  return data as PublicLink;
+}
+
+// --- Comments -------------------------------------------------------------
+
+export async function listComments(pageId: string): Promise<Comment[]> {
+  const { data, error } = await db()
+    .from("comments")
+    .select("*")
+    .eq("page_id", pageId)
+    .order("created_at", { ascending: true });
+  if (error) throw error;
+  return data as Comment[];
+}
+
+export async function addComment(pageId: string, body: string): Promise<void> {
+  const {
+    data: { user },
+  } = await db().auth.getUser();
+  if (!user) throw new Error("Not signed in");
+  const { error } = await db().from("comments").insert({
+    page_id: pageId,
+    author_id: user.id,
+    author_email: user.email ?? null,
+    body,
+  });
+  if (error) throw error;
+}
+
+export async function setCommentResolved(
+  id: string,
+  resolved: boolean,
+): Promise<void> {
+  const { error } = await db()
+    .from("comments")
+    .update({ resolved })
+    .eq("id", id);
+  if (error) throw error;
+}
+
+export async function deleteComment(id: string): Promise<void> {
+  const { error } = await db().from("comments").delete().eq("id", id);
+  if (error) throw error;
 }
 
 export async function signOut() {

@@ -33,7 +33,8 @@ Legend: ✅ done · 🟡 partial · ⬜ not started
 | Databases: 5 views, filter/sort/group, column show-hide/resize | ✅ |
 | Relations / rollups / formulas (stretch) | ⬜ |
 | Realtime collaboration (Yjs) + presence | ✅ |
-| Comments, mentions, sharing / public pages | ⬜ |
+| Public pages (publish to web) + comments | ✅ |
+| Per-page roles, @mentions, member invites | ⬜ |
 | Media uploads (image/file/video) + rich block set | ✅ |
 | Embeds/bookmarks, callout, columns, code highlight | ⬜ |
 | Export, templates, mobile polish | ⬜ |
@@ -154,12 +155,15 @@ Building incrementally; Table view shipped first.
   offline edit queue. Docker self-host includes the `realtime` service; on
   Supabase Cloud Realtime is automatic.
 
-### Phase 9 — Sharing, permissions & comments
-- ⬜ Per-page **sharing** (invite workspace members; view/comment/edit roles).
-- ⬜ **Public links**: read-only published pages (SSR route, no auth) via
-  `public_links` + relaxed RLS.
-- ⬜ **Comments** on blocks/pages; resolve threads.
-- ⬜ **@mentions** of people and pages; basic notifications.
+### Phase 9 — Sharing, permissions & comments 🟡 (public pages + comments done)
+- ✅ **Public links**: read-only published pages at `/p/[slug]` (SSR, no auth)
+  via `public_links` + relaxed RLS (`is_page_public`); a Share menu toggles
+  publish and copies the link.
+- ✅ **Comments**: page-level threads (`comments` table + RLS) — add, resolve,
+  delete, with an unresolved-count badge.
+- ⬜ Per-page **sharing roles** (view/comment/edit) — currently access is
+  workspace-level.
+- ⬜ **@mentions** of people/pages; notifications.
 - ⬜ Workspace **member management** & invites.
 
 ### Phase 10 — Productivity & polish

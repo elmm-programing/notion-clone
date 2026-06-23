@@ -97,6 +97,23 @@ export type YjsDocument = {
   updated_at: string;
 };
 
+export type PublicLink = {
+  page_id: string;
+  slug: string;
+  enabled: boolean;
+  created_at: string;
+};
+
+export type Comment = {
+  id: string;
+  page_id: string;
+  author_id: string;
+  author_email: string | null;
+  body: string;
+  resolved: boolean;
+  created_at: string;
+};
+
 export type Database = {
   public: {
     Tables: {
@@ -155,6 +172,22 @@ export type Database = {
         Row: YjsDocument;
         Insert: Partial<YjsDocument> & { page_id: string };
         Update: Partial<YjsDocument>;
+        Relationships: [];
+      };
+      public_links: {
+        Row: PublicLink;
+        Insert: Partial<PublicLink> & { page_id: string; slug: string };
+        Update: Partial<PublicLink>;
+        Relationships: [];
+      };
+      comments: {
+        Row: Comment;
+        Insert: Partial<Comment> & {
+          page_id: string;
+          author_id: string;
+          body: string;
+        };
+        Update: Partial<Comment>;
         Relationships: [];
       };
     };

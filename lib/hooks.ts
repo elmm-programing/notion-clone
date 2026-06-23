@@ -4,16 +4,20 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import {
+  addComment,
   addFavorite,
   createDatabase,
   createDbProperty,
   createDbRow,
   createDbView,
   createPage,
+  deleteComment,
   deleteDbProperty,
   deleteDbView,
   getPage,
+  getPublicLink,
   hardDeletePage,
+  listComments,
   listDbProperties,
   listDbRows,
   listDbValues,
@@ -25,7 +29,9 @@ import {
   removeFavorite,
   restorePage,
   searchPages,
+  setCommentResolved,
   setDbValue,
+  setPublished,
   softDeletePage,
   updateDbProperty,
   updateDbView,
@@ -288,6 +294,61 @@ export function useSetDbValue(dbPageId: string) {
     }) => setDbValue(rowId, propertyId, value),
     onSuccess: () =>
       qc.invalidateQueries({ queryKey: ["db_values", dbPageId] }),
+  });
+}
+
+// --- Sharing (public links) -----------------------------------------------
+
+export function usePublicLink(pageId: string) {
+  return useQuery({
+    queryKey: ["public_link", pageId],
+    queryFn: () => getPublicLink(pageId),
+    enabled: !!pageId,
+  });
+}
+
+export function useSetPublished(pageId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ enabled, title }: { enabled: boolean; title: string }) =>
+      setPublished(pageId, enabled, title),
+    onSuccess: () =>
+      qc.invalidateQueries({ queryKey: ["public_link", pageId] }),
+  });
+}
+
+// --- Comments -------------------------------------------------------------
+
+export function useComments(pageId: string) {
+  return useQuery({
+    queryKey: ["comments", pageId],
+    queryFn: () => listComments(pageId),
+    enabled: !!pageId,
+  });
+}
+
+export function useAddComment(pageId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: string) => addComment(pageId, body),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["comments", pageId] }),
+  });
+}
+
+export function useResolveComment(pageId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, resolved }: { id: string; resolved: boolean }) =>
+      setCommentResolved(id, resolved),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["comments", pageId] }),
+  });
+}
+
+export function useDeleteComment(pageId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => deleteComment(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["comments", pageId] }),
   });
 }
 

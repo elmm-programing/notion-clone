@@ -30,10 +30,13 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const isAuthRoute = request.nextUrl.pathname.startsWith("/login");
+  const { pathname } = request.nextUrl;
+  const isAuthRoute = pathname.startsWith("/login");
+  // Published pages are public — no auth required.
+  const isPublicRoute = pathname.startsWith("/p/");
 
-  // Not signed in and not on an auth route -> send to login.
-  if (!user && !isAuthRoute) {
+  // Not signed in and not on a public/auth route -> send to login.
+  if (!user && !isAuthRoute && !isPublicRoute) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);
