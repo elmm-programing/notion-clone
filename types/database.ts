@@ -91,6 +91,12 @@ export type DbView = {
   created_at: string;
 };
 
+export type YjsDocument = {
+  page_id: string;
+  state: string | null;
+  updated_at: string;
+};
+
 export type Database = {
   public: {
     Tables: {
@@ -143,6 +149,12 @@ export type Database = {
         Row: DbView;
         Insert: Partial<DbView> & { page_id: string };
         Update: Partial<DbView>;
+        Relationships: [];
+      };
+      yjs_documents: {
+        Row: YjsDocument;
+        Insert: Partial<YjsDocument> & { page_id: string };
+        Update: Partial<YjsDocument>;
         Relationships: [];
       };
     };

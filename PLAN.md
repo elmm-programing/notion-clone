@@ -32,7 +32,7 @@ Legend: ✅ done · 🟡 partial · ⬜ not started
 | Search + Cmd-K quick switcher + recents | ✅ |
 | Databases: 5 views, filter/sort/group, column show-hide/resize | ✅ |
 | Relations / rollups / formulas (stretch) | ⬜ |
-| Realtime collaboration (Yjs) + presence | ⬜ |
+| Realtime collaboration (Yjs) + presence | ✅ |
 | Comments, mentions, sharing / public pages | ⬜ |
 | Media uploads (image/file/video) + rich block set | ✅ |
 | Embeds/bookmarks, callout, columns, code highlight | ⬜ |
@@ -138,12 +138,18 @@ Building incrementally; Table view shipped first.
   (Properties menu) and **column resize** (drag handles, persisted widths).
 - ⬜ *(Stretch)* relations, rollups, formulas.
 
-### Phase 8 — Realtime collaboration
-- ⬜ Integrate **Yjs** with BlockNote (`@blocknote/core` collaboration option).
-- ⬜ Sync provider: Supabase Realtime broadcast (or y-sweet / PartyKit / a
-  Hocuspocus server for scale); persist Yjs state to `yjs_documents`.
-- ⬜ **Presence**: live cursors + avatars of active editors.
-- ⬜ Conflict-free multi-client editing; offline catch-up on reconnect.
+### Phase 8 — Realtime collaboration ✅ (done)
+- ✅ Integrate **Yjs** with BlockNote (collaboration option + shared fragment).
+- ✅ Sync provider over **Supabase Realtime broadcast** (`lib/collab.ts`):
+  document + awareness updates relayed per page; CRDT state persisted to
+  `yjs_documents` (loaded on open, debounced save) so docs survive with no peers.
+  Late joiners catch up via a `sync-request` broadcast.
+- ✅ **Presence**: live cursors (BlockNote awareness) + active-editor avatars.
+- ✅ Conflict-free multi-client editing (CRDT). New shared docs seed once from
+  the saved snapshot; a JSON snapshot is still written to `pages.content`.
+- ⬜ *(Follow-up)* collaborative **title** (currently last-write-wins) and full
+  offline edit queue. Docker self-host includes the `realtime` service; on
+  Supabase Cloud Realtime is automatic.
 
 ### Phase 9 — Sharing, permissions & comments
 - ⬜ Per-page **sharing** (invite workspace members; view/comment/edit roles).

@@ -10,12 +10,17 @@ export default async function PageRoute({
   const { id } = await params;
   const supabase = await createClient();
 
-  const { data } = await supabase
-    .from("workspaces")
-    .select("id")
-    .limit(1)
-    .single();
+  const [{ data }, { data: auth }] = await Promise.all([
+    supabase.from("workspaces").select("id").limit(1).single(),
+    supabase.auth.getUser(),
+  ]);
   const workspace = data as Pick<Workspace, "id"> | null;
 
-  return <PageView pageId={id} workspaceId={workspace?.id ?? null} />;
+  return (
+    <PageView
+      pageId={id}
+      workspaceId={workspace?.id ?? null}
+      userEmail={auth.user?.email ?? undefined}
+    />
+  );
 }

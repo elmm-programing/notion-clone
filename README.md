@@ -23,11 +23,12 @@ See [`PLAN.md`](./PLAN.md) for the full feature comparison against Notion and th
 - Page header: emoji icons, cover images, breadcrumbs
 - Block editor (BlockNote): slash menu, rich blocks, image/file/video upload, autosave
 - Search + ⌘K quick switcher with recent pages
+- Realtime multiplayer editing (Yjs + Supabase Realtime): live cursors & presence avatars
 - Light/dark theme toggle
 - Postgres schema with Row Level Security (`supabase/migrations/`)
 
-Still to build (see `PLAN.md`): databases/table views, realtime collaboration (Yjs),
-sharing/public pages, comments, embeds/callouts, export.
+Still to build (see `PLAN.md`): sharing/public pages, comments & mentions,
+templates, export, and the database stretch goals (relations/rollups/formulas).
 
 ## Run everything in Docker (self-hosted Supabase + app)
 

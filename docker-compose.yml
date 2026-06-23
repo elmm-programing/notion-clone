@@ -28,6 +28,7 @@ services:
       - db-config:/etc/postgresql-custom
       - ./supabase/docker/volumes/db/roles.sql:/docker-entrypoint-initdb.d/init-scripts/99-roles.sql:ro,Z
       - ./supabase/docker/volumes/db/jwt.sql:/docker-entrypoint-initdb.d/init-scripts/99-jwt.sql:ro,Z
+      - ./supabase/docker/volumes/db/realtime.sql:/docker-entrypoint-initdb.d/migrations/99-realtime.sql:ro,Z
     command:
       - postgres
       - -c
@@ -163,6 +164,43 @@ services:
     volumes:
       - storage-data:/var/lib/storage:z
 
+  # Realtime powers live collaboration (Yjs broadcast). If it fails to start
+  # the rest of the app still works — only multiplayer editing is affected.
+  realtime:
+    image: supabase/realtime:v2.102.3
+    container_name: realtime-dev.supabase-realtime
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - "curl -sSfL --head -o /dev/null -H \"Authorization: Bearer ${ANON_KEY}\" http://localhost:4000/api/tenants/realtime-dev/health"
+      timeout: 5s
+      interval: 10s
+      retries: 5
+      start_period: 20s
+    environment:
+      PORT: 4000
+      DB_HOST: ${POSTGRES_HOST}
+      DB_PORT: ${POSTGRES_PORT}
+      DB_USER: supabase_admin
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      DB_NAME: ${POSTGRES_DB}
+      DB_AFTER_CONNECT_QUERY: "SET search_path TO _realtime"
+      DB_ENC_KEY: supabaserealtime
+      API_JWT_SECRET: ${JWT_SECRET}
+      SECRET_KEY_BASE: ${SECRET_KEY_BASE}
+      METRICS_JWT_SECRET: ${JWT_SECRET}
+      ERL_AFLAGS: -proto_dist inet_tcp
+      DNS_NODES: "''"
+      RLIMIT_NOFILE: "10000"
+      APP_NAME: realtime
+      SEED_SELF_HOST: "true"
+      RUN_JANITOR: "true"
+      DISABLE_HEALTHCHECK_LOGGING: "true"
+
   kong:
     image: kong:2.8.1
     container_name: notion-kong
@@ -176,6 +214,8 @@ services:
       rest:
         condition: service_started
       storage:
+        condition: service_started
+      realtime:
         condition: service_started
     environment:
       KONG_DATABASE: "off"
