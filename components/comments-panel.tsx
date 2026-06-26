@@ -1,6 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import type { RealtimeChannel } from "@supabase/supabase-js";
 import { Check, MessageSquare, Trash2, X } from "lucide-react";
 import {
   useAddComment,
@@ -8,11 +10,39 @@ import {
   useDeleteComment,
   useResolveComment,
 } from "@/lib/hooks";
+import { createClient } from "@/lib/supabase/client";
 
 export function CommentsButton({ pageId }: { pageId: string }) {
   const [open, setOpen] = useState(false);
   const { data: comments = [] } = useComments(pageId);
   const openCount = comments.filter((c) => !c.resolved).length;
+
+  const qc = useQueryClient();
+  const channelRef = useRef<RealtimeChannel | null>(null);
+
+  // Live updates: peers broadcast "changed" after a comment mutation.
+  useEffect(() => {
+    const supabase = createClient();
+    const ch = supabase.channel(`comments:${pageId}`, {
+      config: { broadcast: { self: false } },
+    });
+    ch.on("broadcast", { event: "changed" }, () => {
+      qc.invalidateQueries({ queryKey: ["comments", pageId] });
+    }).subscribe();
+    channelRef.current = ch;
+    return () => {
+      void supabase.removeChannel(ch);
+      channelRef.current = null;
+    };
+  }, [pageId, qc]);
+
+  const notify = () => {
+    void channelRef.current?.send({
+      type: "broadcast",
+      event: "changed",
+      payload: {},
+    });
+  };
 
   return (
     <div className="relative">
@@ -24,7 +54,13 @@ export function CommentsButton({ pageId }: { pageId: string }) {
         <MessageSquare size={15} />
         {openCount > 0 && <span className="text-xs">{openCount}</span>}
       </button>
-      {open && <CommentsPanel pageId={pageId} onClose={() => setOpen(false)} />}
+      {open && (
+        <CommentsPanel
+          pageId={pageId}
+          onClose={() => setOpen(false)}
+          onChanged={notify}
+        />
+      )}
     </div>
   );
 }
@@ -32,9 +68,11 @@ export function CommentsButton({ pageId }: { pageId: string }) {
 function CommentsPanel({
   pageId,
   onClose,
+  onChanged,
 }: {
   pageId: string;
   onClose: () => void;
+  onChanged: () => void;
 }) {
   const { data: comments = [], isLoading } = useComments(pageId);
   const addComment = useAddComment(pageId);
@@ -45,7 +83,7 @@ function CommentsPanel({
   function submit() {
     const body = draft.trim();
     if (!body) return;
-    addComment.mutate(body);
+    addComment.mutate(body, { onSuccess: onChanged });
     setDraft("");
   }
 
@@ -86,7 +124,10 @@ function CommentsPanel({
                 <div className="flex shrink-0 items-center gap-1">
                   <button
                     onClick={() =>
-                      resolveComment.mutate({ id: c.id, resolved: !c.resolved })
+                      resolveComment.mutate(
+                        { id: c.id, resolved: !c.resolved },
+                        { onSuccess: onChanged },
+                      )
                     }
                     className="hidden text-muted-foreground hover:text-green-600 group-hover:block"
                     title={c.resolved ? "Reopen" : "Resolve"}
@@ -94,7 +135,9 @@ function CommentsPanel({
                     <Check size={13} />
                   </button>
                   <button
-                    onClick={() => deleteComment.mutate(c.id)}
+                    onClick={() =>
+                      deleteComment.mutate(c.id, { onSuccess: onChanged })
+                    }
                     className="hidden text-muted-foreground hover:text-red-500 group-hover:block"
                     title="Delete"
                   >

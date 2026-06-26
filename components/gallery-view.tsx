@@ -8,6 +8,13 @@ function display(v: Json | null): string {
   if (v == null || v === "") return "";
   if (v === true) return "✓";
   if (v === false) return "";
+  if (Array.isArray(v))
+    return v
+      .map((x) =>
+        x && typeof x === "object" ? ((x as { name?: string }).name ?? "") : String(x),
+      )
+      .filter(Boolean)
+      .join(", ");
   return String(v);
 }
 

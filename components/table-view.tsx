@@ -10,21 +10,33 @@ import {
   type DbSort,
   type ValueMap,
 } from "@/lib/db";
-import type { DbProperty, DbPropertyType, Json, Page } from "@/types/database";
+import type {
+  DbProperty,
+  DbPropertyType,
+  Json,
+  Page,
+  WorkspaceMemberInfo,
+} from "@/types/database";
 
 const TYPE_LABELS: Record<DbPropertyType, string> = {
   text: "Text",
   number: "Number",
   select: "Select",
+  multi_select: "Multi-select",
+  person: "Person",
+  files: "Files",
   checkbox: "Checkbox",
   date: "Date",
   url: "URL",
+  created_time: "Created time",
+  edited_time: "Edited time",
 };
 
 export function TableView({
   properties,
   rows,
   valueMap,
+  members,
   sorts,
   groupByProperty,
   widths,
@@ -44,6 +56,7 @@ export function TableView({
   properties: DbProperty[];
   rows: Page[];
   valueMap: ValueMap;
+  members: WorkspaceMemberInfo[];
   sorts: DbSort[];
   groupByProperty: DbProperty | null;
   widths: Record<string, number>;
@@ -138,6 +151,8 @@ export function TableView({
             <DbCell
               property={property}
               value={getCellValue(row, property.id, valueMap)}
+              row={row}
+              members={members}
               onCommit={(v) => onCommitValue(row, property, v)}
             />
           </td>

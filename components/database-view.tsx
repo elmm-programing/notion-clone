@@ -28,6 +28,7 @@ import {
   useSetDbValue,
   useUpdateDbProperty,
   useUpdateDbView,
+  useWorkspaceMembers,
 } from "@/lib/hooks";
 import { updatePage } from "@/lib/queries";
 import {
@@ -67,6 +68,7 @@ export function DatabaseView({
   const { data: rows = [] } = useDbRows(dbPage.id);
   const rowIds = useMemo(() => rows.map((r) => r.id), [rows]);
   const { data: values = [] } = useDbValues(dbPage.id, rowIds);
+  const { data: members = [] } = useWorkspaceMembers(workspaceId);
 
   const createView = useCreateDbView(dbPage.id);
   const updateView = useUpdateDbView(dbPage.id);
@@ -129,14 +131,20 @@ export function DatabaseView({
 
   function commitValue(row: Page, property: DbProperty, value: Json | null) {
     setValue.mutate({ rowId: row.id, propertyId: property.id, value });
-    if (property.type === "select" && typeof value === "string" && value) {
+    // Remember newly-used options for (multi-)select properties.
+    const used =
+      property.type === "select" && typeof value === "string" && value
+        ? [value]
+        : property.type === "multi_select" && Array.isArray(value)
+          ? (value as string[])
+          : [];
+    if (used.length) {
       const options = property.config.options ?? [];
-      if (!options.includes(value)) {
+      const merged = [...new Set([...options, ...used])];
+      if (merged.length !== options.length) {
         updateProperty.mutate({
           id: property.id,
-          patch: {
-            config: { ...property.config, options: [...options, value] },
-          },
+          patch: { config: { ...property.config, options: merged } },
         });
       }
     }
@@ -346,6 +354,7 @@ export function DatabaseView({
           properties={visibleProperties}
           rows={sorted}
           valueMap={valueMap}
+          members={members}
           sorts={config.sorts ?? []}
           groupByProperty={groupProperty}
           widths={config.widths ?? {}}

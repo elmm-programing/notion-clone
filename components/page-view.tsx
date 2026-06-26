@@ -75,8 +75,32 @@ export function PageView({
     }
   }, [page?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Collaborative title: bind to a shared Y.Text in the same doc.
+  useEffect(() => {
+    if (!collab || !page) return;
+    const yt = collab.doc.getText("title");
+    const onYChange = (_e: unknown, tx: { local: boolean }) => {
+      if (!tx.local) setTitle(yt.toString());
+    };
+    yt.observe(onYChange);
+    void collab.loaded.then((seed) => {
+      if (seed && yt.length === 0 && page.title) {
+        collab.doc.transact(() => yt.insert(0, page.title));
+      }
+      setTitle(yt.toString() || page.title || "");
+    });
+    return () => yt.unobserve(onYChange);
+  }, [collab, page?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
   function handleTitleChange(value: string) {
     setTitle(value);
+    if (collab) {
+      const yt = collab.doc.getText("title");
+      collab.doc.transact(() => {
+        yt.delete(0, yt.length);
+        yt.insert(0, value);
+      });
+    }
     if (titleTimer.current) clearTimeout(titleTimer.current);
     titleTimer.current = setTimeout(() => {
       updatePage.mutate({ id: pageId, patch: { title: value || "Untitled" } });

@@ -61,9 +61,21 @@ export type DbPropertyType =
   | "text"
   | "number"
   | "select"
+  | "multi_select"
+  | "person"
+  | "files"
   | "checkbox"
   | "date"
-  | "url";
+  | "url"
+  | "created_time"
+  | "edited_time";
+
+export type WorkspaceMemberInfo = {
+  user_id: string;
+  email: string | null;
+};
+
+export type DbFile = { name: string; url: string };
 
 export type DbProperty = {
   id: string;

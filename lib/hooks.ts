@@ -26,6 +26,7 @@ import {
   listFavoriteIds,
   listPages,
   listTrashed,
+  listWorkspaceMembers,
   movePage,
   removeFavorite,
   restorePage,
@@ -178,6 +179,14 @@ export function useSearch(workspaceId: string | null, query: string) {
     queryKey: ["search", workspaceId, query],
     queryFn: () => searchPages(workspaceId!, query),
     enabled: !!workspaceId && query.trim().length > 0,
+  });
+}
+
+export function useWorkspaceMembers(workspaceId: string | null) {
+  return useQuery({
+    queryKey: ["workspace_members", workspaceId],
+    queryFn: () => listWorkspaceMembers(workspaceId!),
+    enabled: !!workspaceId,
   });
 }
 

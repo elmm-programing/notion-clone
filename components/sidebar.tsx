@@ -14,7 +14,6 @@ import {
 } from "@dnd-kit/core";
 import {
   SortableContext,
-  arrayMove,
   useSortable,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
@@ -87,28 +86,45 @@ export function Sidebar({
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
   );
 
+  // Is `nodeId` inside the subtree rooted at `rootId` (prevents cycles)?
+  function isInSubtree(rootId: string, nodeId: string | null): boolean {
+    let cur = nodeId;
+    const seen = new Set<string>();
+    while (cur && !seen.has(cur)) {
+      if (cur === rootId) return true;
+      seen.add(cur);
+      cur = byId.get(cur)?.parent_id ?? null;
+    }
+    return false;
+  }
+
   function handleDragEnd(e: DragEndEvent) {
     const { active, over } = e;
     if (!over || active.id === over.id) return;
     const a = byId.get(String(active.id));
     const o = byId.get(String(over.id));
-    if (!a || !o || a.parent_id !== o.parent_id) return; // same level only
+    if (!a || !o) return;
 
-    const siblings = (childrenByParent.get(a.parent_id) ?? []).slice();
-    const oldIndex = siblings.findIndex((p) => p.id === a.id);
-    const newIndex = siblings.findIndex((p) => p.id === o.id);
-    if (oldIndex < 0 || newIndex < 0) return;
+    // Drop into the target's sibling group at the target's position — this
+    // both reorders (same parent) and re-parents (different parent).
+    const targetParent = o.parent_id;
+    if (a.id === targetParent || isInSubtree(a.id, targetParent)) return; // no cycles
 
-    const reordered = arrayMove(siblings, oldIndex, newIndex);
-    const prev = reordered[newIndex - 1]?.position;
-    const next = reordered[newIndex + 1]?.position;
+    const siblings = (childrenByParent.get(targetParent) ?? []).filter(
+      (p) => p.id !== a.id,
+    );
+    const overIndex = siblings.findIndex((p) => p.id === o.id);
+    if (overIndex < 0) return;
+
+    const prev = siblings[overIndex - 1]?.position;
+    const next = siblings[overIndex]?.position; // the target, now after `a`
     let position: number;
     if (prev == null && next == null) position = Date.now();
     else if (prev == null) position = next! - 1;
     else if (next == null) position = prev + 1;
     else position = (prev + next) / 2;
 
-    movePage.mutate({ id: a.id, position, parentId: a.parent_id });
+    movePage.mutate({ id: a.id, position, parentId: targetParent });
   }
 
   async function handleCreateRoot() {

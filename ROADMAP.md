@@ -13,18 +13,18 @@ Legend: ⬜ not started · 🟡 partial
 
 ---
 
-## M6 — Finish the near-done gaps (quick wins)
+## M6 — Finish the near-done gaps (quick wins) ✅ (done)
 
 Small, self-contained items deferred during Phases 4–8. Best ROI.
 
 | Item | Effort | Notes |
 | --- | --- | --- |
-| ⬜ Collaborative **page title** | S | Move title into the Yjs doc (or a shared `Y.Text`) so it syncs like the body; today it's last-write-wins via `pages.title`. |
-| ⬜ **Realtime comments** | S | Subscribe a Supabase Realtime channel per page; invalidate `["comments", pageId]` on insert/update/delete instead of refetch-only. |
-| ⬜ Sidebar **drag re-parenting** | M | Extend the dnd-kit tree to allow dropping onto a page (set `parent_id` + fractional `position`); today only same-level reorder works. |
-| ⬜ Property types: **multi-select, person, files, created/edited time** | M | Multi-select = `string[]` value + chip cell; person = workspace member picker; files = reuse `media` upload; created/edited = derived from `pages.created_at/updated_at`. |
-| ⬜ Code-block **syntax highlighting** | S | Enable BlockNote's Shiki code-block (`@blocknote/code-block`) in the editor config. |
-| ⬜ **Empty states & error/loading boundaries** | S | Add `error.tsx`/`loading.tsx` route files; friendlier empty states for pages/databases/search. |
+| ✅ Collaborative **page title** | S | Title bound to a shared `Y.Text` in the page doc; syncs live, snapshots to `pages.title`. |
+| ✅ **Realtime comments** | S | Per-page Supabase broadcast channel; peers invalidate `["comments", pageId]` after each mutation (badge + panel update live). |
+| ✅ Sidebar **drag re-parenting** | M | Dropping into another item's sibling group reorders *and* re-parents (sets `parent_id` + fractional `position`); cycle-guarded. |
+| ✅ Property types: **multi-select, person, files, created/edited time** | M | Multi-select chips; person = workspace-member picker (needs `0009` co-worker RLS); files = `media` upload; created/edited derived from the row's timestamps. |
+| ✅ Code-block **syntax highlighting** | S | `@blocknote/code-block` (`codeBlockOptions`) wired into the editor. |
+| ✅ **Empty states & error/loading boundaries** | S | `(app)/error.tsx` + `loading.tsx`; array-aware value display in gallery/list. |
 
 ---
 

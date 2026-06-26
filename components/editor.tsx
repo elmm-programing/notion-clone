@@ -6,6 +6,7 @@ import "@blocknote/mantine/style.css";
 import { useEffect, useRef } from "react";
 import { useCreateBlockNote } from "@blocknote/react";
 import { BlockNoteView } from "@blocknote/mantine";
+import { codeBlockOptions } from "@blocknote/code-block";
 import { useTheme } from "next-themes";
 import type { Block, PartialBlock } from "@blocknote/core";
 import { uploadMedia } from "@/lib/queries";
@@ -42,6 +43,7 @@ export default function Editor({
             fragment: collab.doc.getXmlFragment(FRAGMENT),
             user: collab.user,
           },
+          codeBlock: codeBlockOptions, // syntax-highlighted code blocks (Shiki)
           uploadFile: (file: File) => uploadMedia(pageId, file),
         }
       : {
@@ -49,6 +51,7 @@ export default function Editor({
             initialContent && initialContent.length > 0
               ? initialContent
               : undefined,
+          codeBlock: codeBlockOptions,
           uploadFile: (file: File) => uploadMedia(pageId, file),
         },
   );

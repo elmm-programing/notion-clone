@@ -8,6 +8,7 @@ import type {
   Json,
   Page,
   PublicLink,
+  WorkspaceMemberInfo,
 } from "@/types/database";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database";
@@ -241,6 +242,31 @@ export async function uploadMedia(
 
   const { data } = db().storage.from("media").getPublicUrl(path);
   return data.publicUrl;
+}
+
+export async function listWorkspaceMembers(
+  workspaceId: string,
+): Promise<WorkspaceMemberInfo[]> {
+  const { data: members, error } = await db()
+    .from("workspace_members")
+    .select("user_id")
+    .eq("workspace_id", workspaceId);
+  if (error) throw error;
+  const ids = (members as { user_id: string }[]).map((m) => m.user_id);
+  if (ids.length === 0) return [];
+
+  const { data: profs, error: pErr } = await db()
+    .from("profiles")
+    .select("id, email")
+    .in("id", ids);
+  if (pErr) throw pErr;
+  const emailById = new Map(
+    (profs as { id: string; email: string | null }[]).map((p) => [
+      p.id,
+      p.email,
+    ]),
+  );
+  return ids.map((id) => ({ user_id: id, email: emailById.get(id) ?? null }));
 }
 
 // --- Databases ------------------------------------------------------------
