@@ -98,13 +98,18 @@ export function DatabaseView({
     return map;
   }, [values]);
 
+  const propsById = useMemo(
+    () => new Map(properties.map((p) => [p.id, p])),
+    [properties],
+  );
+
   const filtered = useMemo(
-    () => applyFilters(rows, config.filters ?? [], valueMap),
-    [rows, config.filters, valueMap],
+    () => applyFilters(rows, config.filters ?? [], propsById, valueMap),
+    [rows, config.filters, propsById, valueMap],
   );
   const sorted = useMemo(
-    () => applySorts(filtered, config.sorts ?? [], valueMap),
-    [filtered, config.sorts, valueMap],
+    () => applySorts(filtered, config.sorts ?? [], propsById, valueMap),
+    [filtered, config.sorts, propsById, valueMap],
   );
 
   function updateConfig(patch: Partial<ViewConfig>) {
@@ -322,6 +327,7 @@ export function DatabaseView({
           properties={properties}
           rows={sorted}
           valueMap={valueMap}
+          members={members}
           onOpenRow={(id) => router.push(`/page/${id}`)}
           onCreateRow={() => createRow.mutate()}
           canCreate={!!workspaceId}
@@ -331,6 +337,7 @@ export function DatabaseView({
           properties={properties}
           rows={sorted}
           valueMap={valueMap}
+          members={members}
           onRowTitle={handleRowTitle}
           onOpenRow={(id) => router.push(`/page/${id}`)}
           onDeleteRow={handleDeleteRow}

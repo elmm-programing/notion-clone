@@ -14,6 +14,7 @@ import {
 } from "@dnd-kit/core";
 import {
   SortableContext,
+  arrayMove,
   useSortable,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
@@ -105,19 +106,32 @@ export function Sidebar({
     const o = byId.get(String(over.id));
     if (!a || !o) return;
 
-    // Drop into the target's sibling group at the target's position — this
-    // both reorders (same parent) and re-parents (different parent).
     const targetParent = o.parent_id;
     if (a.id === targetParent || isInSubtree(a.id, targetParent)) return; // no cycles
 
-    const siblings = (childrenByParent.get(targetParent) ?? []).filter(
-      (p) => p.id !== a.id,
-    );
-    const overIndex = siblings.findIndex((p) => p.id === o.id);
-    if (overIndex < 0) return;
+    let ordered: typeof pages;
+    let insertAt: number;
+    if (targetParent === a.parent_id) {
+      // Same-level reorder — arrayMove reaches every position, incl. the end.
+      const siblings = childrenByParent.get(targetParent) ?? [];
+      const oldIndex = siblings.findIndex((p) => p.id === a.id);
+      const overIndex = siblings.findIndex((p) => p.id === o.id);
+      if (oldIndex < 0 || overIndex < 0) return;
+      ordered = arrayMove(siblings, oldIndex, overIndex);
+      insertAt = overIndex;
+    } else {
+      // Re-parent: insert before the target in its sibling group.
+      const siblings = (childrenByParent.get(targetParent) ?? []).filter(
+        (p) => p.id !== a.id,
+      );
+      const overIndex = siblings.findIndex((p) => p.id === o.id);
+      if (overIndex < 0) return;
+      ordered = [...siblings.slice(0, overIndex), a, ...siblings.slice(overIndex)];
+      insertAt = overIndex;
+    }
 
-    const prev = siblings[overIndex - 1]?.position;
-    const next = siblings[overIndex]?.position; // the target, now after `a`
+    const prev = ordered[insertAt - 1]?.position;
+    const next = ordered[insertAt + 1]?.position;
     let position: number;
     if (prev == null && next == null) position = Date.now();
     else if (prev == null) position = next! - 1;

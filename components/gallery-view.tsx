@@ -1,27 +1,14 @@
 "use client";
 
 import { Plus } from "lucide-react";
-import { getCellValue, type ValueMap } from "@/lib/db";
-import type { DbProperty, Json, Page } from "@/types/database";
-
-function display(v: Json | null): string {
-  if (v == null || v === "") return "";
-  if (v === true) return "✓";
-  if (v === false) return "";
-  if (Array.isArray(v))
-    return v
-      .map((x) =>
-        x && typeof x === "object" ? ((x as { name?: string }).name ?? "") : String(x),
-      )
-      .filter(Boolean)
-      .join(", ");
-  return String(v);
-}
+import { formatCellValue, getCellValue, type ValueMap } from "@/lib/db";
+import type { DbProperty, Page, WorkspaceMemberInfo } from "@/types/database";
 
 export function GalleryView({
   properties,
   rows,
   valueMap,
+  members,
   onOpenRow,
   onCreateRow,
   canCreate,
@@ -29,6 +16,7 @@ export function GalleryView({
   properties: DbProperty[];
   rows: Page[];
   valueMap: ValueMap;
+  members: WorkspaceMemberInfo[];
   onOpenRow: (rowId: string) => void;
   onCreateRow: () => void;
   canCreate: boolean;
@@ -48,7 +36,11 @@ export function GalleryView({
             </div>
             <div className="space-y-0.5">
               {shown.map((p) => {
-                const text = display(getCellValue(row, p.id, valueMap));
+                const text = formatCellValue(
+                  p,
+                  getCellValue(row, p, valueMap),
+                  members,
+                );
                 if (!text) return null;
                 return (
                   <div key={p.id} className="truncate text-xs text-muted-foreground">

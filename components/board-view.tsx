@@ -76,7 +76,7 @@ export function BoardView({
 
   function rowsFor(option: string | null): Page[] {
     return rows.filter((row) => {
-      const v = getCellValue(row, groupProperty!.id, valueMap);
+      const v = getCellValue(row, groupProperty!, valueMap);
       if (option === null) return v == null || v === "";
       return v === option;
     });

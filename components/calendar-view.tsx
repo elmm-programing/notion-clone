@@ -39,7 +39,7 @@ export function CalendarView({
     const map = new Map<string, Page[]>();
     if (!dateProperty) return map;
     for (const row of rows) {
-      const v = getCellValue(row, dateProperty.id, valueMap);
+      const v = getCellValue(row, dateProperty, valueMap);
       if (typeof v === "string" && v) {
         if (!map.has(v)) map.set(v, []);
         map.get(v)!.push(row);

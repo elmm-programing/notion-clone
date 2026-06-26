@@ -150,7 +150,7 @@ export function TableView({
           <td key={property.id} className="border-l border-border px-2 py-1">
             <DbCell
               property={property}
-              value={getCellValue(row, property.id, valueMap)}
+              value={getCellValue(row, property, valueMap)}
               row={row}
               members={members}
               onCommit={(v) => onCommitValue(row, property, v)}

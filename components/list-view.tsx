@@ -2,27 +2,14 @@
 
 import { Plus, Trash2 } from "lucide-react";
 import { EditableText } from "@/components/db-cell";
-import { getCellValue, type ValueMap } from "@/lib/db";
-import type { DbProperty, Json, Page } from "@/types/database";
-
-function display(v: Json | null): string {
-  if (v == null || v === "") return "";
-  if (v === true) return "✓";
-  if (v === false) return "";
-  if (Array.isArray(v))
-    return v
-      .map((x) =>
-        x && typeof x === "object" ? ((x as { name?: string }).name ?? "") : String(x),
-      )
-      .filter(Boolean)
-      .join(", ");
-  return String(v);
-}
+import { formatCellValue, getCellValue, type ValueMap } from "@/lib/db";
+import type { DbProperty, Page, WorkspaceMemberInfo } from "@/types/database";
 
 export function ListView({
   properties,
   rows,
   valueMap,
+  members,
   onRowTitle,
   onOpenRow,
   onDeleteRow,
@@ -32,6 +19,7 @@ export function ListView({
   properties: DbProperty[];
   rows: Page[];
   valueMap: ValueMap;
+  members: WorkspaceMemberInfo[];
   onRowTitle: (rowId: string, title: string) => void;
   onOpenRow: (rowId: string) => void;
   onDeleteRow: (rowId: string) => void;
@@ -55,7 +43,11 @@ export function ListView({
             />
             <div className="hidden shrink-0 items-center gap-3 text-xs text-muted-foreground md:flex">
               {summaryProps.map((p) => {
-                const text = display(getCellValue(row, p.id, valueMap));
+                const text = formatCellValue(
+                  p,
+                  getCellValue(row, p, valueMap),
+                  members,
+                );
                 if (!text) return null;
                 return (
                   <span key={p.id} className="max-w-40 truncate">
