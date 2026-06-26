@@ -61,7 +61,7 @@ export function AppShell({
 
       {/* Sidebar: static on desktop, slide-over on mobile */}
       <div
-        className={`fixed inset-y-0 left-0 z-40 w-60 transform transition-transform md:static md:translate-x-0 ${
+        className={`no-print fixed inset-y-0 left-0 z-40 w-60 transform transition-transform md:static md:translate-x-0 ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
@@ -77,7 +77,7 @@ export function AppShell({
         {/* Mobile hamburger */}
         <button
           onClick={() => setSidebarOpen(true)}
-          className="no-print absolute top-3 left-3 z-20 rounded p-1.5 text-muted-foreground hover:bg-accent md:hidden"
+          className="no-print fixed top-3 left-3 z-40 rounded bg-background/80 p-1.5 text-muted-foreground backdrop-blur hover:bg-accent md:hidden"
           title="Open sidebar"
         >
           <Menu size={18} />

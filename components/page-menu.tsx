@@ -21,10 +21,12 @@ export function PageMenu({
   page,
   workspaceId,
   editorRef,
+  canExport,
 }: {
   page: Page;
   workspaceId: string | null;
   editorRef: RefObject<MarkdownExporter | null>;
+  canExport: boolean;
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -41,8 +43,12 @@ export function PageMenu({
     const editor = editorRef.current;
     if (!editor) return;
     const md = await editor.blocksToMarkdownLossy();
-    const name = `${(page.title || "untitled").replace(/[^a-z0-9]+/gi, "-")}.md`;
-    download(name, `# ${page.title || "Untitled"}\n\n${md}`);
+    const slug =
+      (page.title || "untitled")
+        .replace(/[^a-z0-9]+/gi, "-")
+        .replace(/(^-|-$)/g, "")
+        .toLowerCase() || "untitled";
+    download(`${slug}.md`, `# ${page.title || "Untitled"}\n\n${md}`);
   }
 
   const item =
@@ -67,7 +73,11 @@ export function PageMenu({
               </button>
             )}
             {!page.is_database && (
-              <button onClick={handleExportMarkdown} className={item}>
+              <button
+                onClick={handleExportMarkdown}
+                disabled={!canExport}
+                className={`${item} disabled:opacity-40`}
+              >
                 <Download size={14} /> Export Markdown
               </button>
             )}

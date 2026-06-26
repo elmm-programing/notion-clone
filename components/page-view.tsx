@@ -44,6 +44,7 @@ export function PageView({
   const contentTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const editorRef = useRef<MarkdownExporter | null>(null);
+  const [editorReady, setEditorReady] = useState(false);
 
   // Stable identity for this editing session (cursor label + color).
   const userRef = useRef<CollabUser>({
@@ -116,7 +117,12 @@ export function PageView({
         {!page.is_database && (
           <ShareMenu pageId={page.id} title={page.title} />
         )}
-        <PageMenu page={page} workspaceId={workspaceId} editorRef={editorRef} />
+        <PageMenu
+          page={page}
+          workspaceId={workspaceId}
+          editorRef={editorRef}
+          canExport={editorReady && !page.is_database}
+        />
       </div>
       <PageHeader page={page} workspaceId={workspaceId} />
       <div className="mx-auto max-w-3xl px-12 pt-2">
@@ -142,6 +148,7 @@ export function PageView({
             onChange={handleContentChange}
             onEditorReady={(e) => {
               editorRef.current = e;
+              setEditorReady(!!e);
             }}
           />
         </div>
