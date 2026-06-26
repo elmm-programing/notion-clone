@@ -29,6 +29,7 @@ export type Page = {
   icon: string | null;
   cover_url: string | null;
   content: Json | null;
+  content_text: string | null;
   is_database: boolean;
   position: number;
   created_by: string | null;
@@ -226,6 +227,10 @@ export type Database = {
       find_user_id_by_email: {
         Args: { p_email: string };
         Returns: string;
+      };
+      search_pages: {
+        Args: { p_workspace: string; p_q: string };
+        Returns: Page[];
       };
     };
     Enums: Record<string, never>;

@@ -98,7 +98,10 @@ export function useCreateDatabase(workspaceId: string | null) {
 }
 
 type PagePatch = Partial<
-  Pick<Page, "title" | "icon" | "cover_url" | "position" | "parent_id">
+  Pick<
+    Page,
+    "title" | "icon" | "cover_url" | "content_text" | "position" | "parent_id"
+  >
 > & {
   content?: Json;
 };

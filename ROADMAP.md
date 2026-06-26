@@ -57,16 +57,16 @@ What separates a "table app" from Notion databases.
 
 ---
 
-## M9 — Editor richness (block parity)
+## M9 — Editor richness (block parity) 🟡 (content search done)
 
 | Item | Effort | Notes |
 | --- | --- | --- |
+| ✅ **Full-text content search** (title + body) | M | `pages.content_text` maintained on save (markdown of the doc), trigram-indexed; `search_pages(ws, q)` RPC powers ⌘K. *(Callout/columns avoided — `xl-multi-column` is GPL/proprietary; a license-clean custom callout block is a follow-up.)* |
 | ⬜ **Callout** & **multi-column** layout | M | Callout = custom block; columns = `@blocknote/xl-multi-column`. |
 | ⬜ **Bookmarks / link previews** & **embeds** (YouTube, Figma, etc.) | M | Custom blocks; a small unfurl endpoint (Open Graph fetch) for bookmark cards. |
 | ⬜ **Synced blocks** | L | Shared block content reused across pages (a referenced Yjs fragment). |
 | ⬜ **Backlinks** & page mentions index | M | Track page→page references; show "Linked references" at page bottom. |
 | ⬜ **Table of contents**, **equations (KaTeX)**, **buttons** | S–M | Mostly BlockNote built-ins/custom blocks to enable. |
-| ⬜ **Full-text content search** (ranked) | M | Replace title-only ILIKE with a `tsvector` over extracted block text (maintained on save) + ranked `search_pages` RPC; surface in ⌘K. |
 
 ---
 

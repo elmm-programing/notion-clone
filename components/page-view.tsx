@@ -109,10 +109,18 @@ export function PageView({
 
   function handleContentChange(document: Block[]) {
     if (contentTimer.current) clearTimeout(contentTimer.current);
-    contentTimer.current = setTimeout(() => {
+    contentTimer.current = setTimeout(async () => {
+      // Derive plain text for search (best-effort).
+      let text: string | undefined;
+      try {
+        const r = editorRef.current?.blocksToMarkdownLossy();
+        text = typeof r === "string" ? r : await r;
+      } catch {
+        text = undefined;
+      }
       updatePage.mutate({
         id: pageId,
-        patch: { content: document as unknown as Json },
+        patch: { content: document as unknown as Json, content_text: text },
       });
     }, 800);
   }

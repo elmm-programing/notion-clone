@@ -69,7 +69,13 @@ export async function updatePage(
   patch: Partial<
     Pick<
       Page,
-      "title" | "icon" | "cover_url" | "content" | "position" | "parent_id"
+      | "title"
+      | "icon"
+      | "cover_url"
+      | "content"
+      | "content_text"
+      | "position"
+      | "parent_id"
     >
   > & {
     content?: Json;
@@ -97,19 +103,13 @@ export async function searchPages(
 ): Promise<Page[]> {
   const q = query.trim();
   if (!q) return [];
-  // Escape LIKE metacharacters so they match literally.
-  const escaped = q.replace(/[\\%_]/g, "\\$&");
-  const { data, error } = await db()
-    .from("pages")
-    .select("*")
-    .eq("workspace_id", workspaceId)
-    .is("deleted_at", null)
-    .ilike("title", `%${escaped}%`)
-    .order("updated_at", { ascending: false })
-    .limit(25);
-
+  // Title OR body text, via a SECURITY INVOKER RPC (bound param, RLS-scoped).
+  const { data, error } = await db().rpc("search_pages", {
+    p_workspace: workspaceId,
+    p_q: q,
+  });
   if (error) throw error;
-  return data as Page[];
+  return (data as Page[] | null) ?? [];
 }
 
 // --- Trash ----------------------------------------------------------------
