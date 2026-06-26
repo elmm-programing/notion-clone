@@ -205,6 +205,10 @@ export type Database = {
         Args: { p_id: string };
         Returns: undefined;
       };
+      get_public_page: {
+        Args: { p_slug: string };
+        Returns: Page[];
+      };
     };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;

@@ -109,7 +109,9 @@ export function PageView({
       <div className="flex items-center justify-end gap-2 px-12 pt-3">
         {!page.is_database && collab && <PresenceAvatars collab={collab} />}
         <CommentsButton pageId={page.id} />
-        <ShareMenu pageId={page.id} title={page.title} />
+        {!page.is_database && (
+          <ShareMenu pageId={page.id} title={page.title} />
+        )}
       </div>
       <PageHeader page={page} workspaceId={workspaceId} />
       <div className="mx-auto max-w-3xl px-12 pt-2">

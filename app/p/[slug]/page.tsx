@@ -1,28 +1,19 @@
+import { cache } from "react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { PublicPage } from "@/components/public-page";
-import type { Page, PublicLink } from "@/types/database";
+import type { Page } from "@/types/database";
 
-async function resolve(slug: string): Promise<Page | null> {
+// cache() dedupes the lookup across generateMetadata + the page render.
+const resolve = cache(async (slug: string): Promise<Page | null> => {
   const supabase = await createClient();
-  const { data: link } = await supabase
-    .from("public_links")
-    .select("page_id")
-    .eq("slug", slug)
-    .eq("enabled", true)
-    .maybeSingle();
-  const pageId = (link as Pick<PublicLink, "page_id"> | null)?.page_id;
-  if (!pageId) return null;
-
-  const { data } = await supabase
-    .from("pages")
-    .select("*")
-    .eq("id", pageId)
-    .is("deleted_at", null)
-    .maybeSingle();
-  return (data as Page | null) ?? null;
-}
+  // SECURITY DEFINER resolver: returns a page only for an exact enabled slug
+  // (no enumeration, no broad anon SELECT on pages).
+  const { data } = await supabase.rpc("get_public_page", { p_slug: slug });
+  const rows = (data as Page[] | null) ?? [];
+  return rows[0] ?? null;
+});
 
 export async function generateMetadata({
   params,
