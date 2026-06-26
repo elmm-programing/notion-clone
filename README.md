@@ -25,7 +25,8 @@ See [`PLAN.md`](./PLAN.md) for the full feature comparison against Notion and th
 - Search + ⌘K quick switcher with recent pages
 - Realtime multiplayer editing (Yjs + Supabase Realtime): live cursors & presence avatars
 - Share: publish a page to a public read-only URL (`/p/<slug>`); page comments
-- Light/dark theme toggle
+- Duplicate pages, export to Markdown / print to PDF
+- Responsive: collapsible sidebar on mobile; light/dark theme
 - Postgres schema with Row Level Security (`supabase/migrations/`)
 
 Still to build (see `PLAN.md`): per-page roles & @mentions, templates, export,

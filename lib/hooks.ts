@@ -14,6 +14,7 @@ import {
   deleteComment,
   deleteDbProperty,
   deleteDbView,
+  duplicatePage,
   getPage,
   getPublicLink,
   hardDeletePage,
@@ -66,6 +67,16 @@ export function useCreatePage(workspaceId: string | null) {
   return useMutation({
     mutationFn: (parentId?: string | null) =>
       createPage({ workspaceId: workspaceId!, parentId }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["pages", workspaceId] });
+    },
+  });
+}
+
+export function useDuplicatePage(workspaceId: string | null) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (pageId: string) => duplicatePage(pageId),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["pages", workspaceId] });
     },

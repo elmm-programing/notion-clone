@@ -9,6 +9,8 @@ import { DatabaseView } from "@/components/database-view";
 import { PresenceAvatars } from "@/components/presence-avatars";
 import { ShareMenu } from "@/components/share-menu";
 import { CommentsButton } from "@/components/comments-panel";
+import { PageMenu } from "@/components/page-menu";
+import type { MarkdownExporter } from "@/components/editor";
 import { pushRecent } from "@/lib/recents";
 import {
   createCollabProvider,
@@ -40,6 +42,8 @@ export function PageView({
   const [title, setTitle] = useState("");
   const titleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const contentTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const editorRef = useRef<MarkdownExporter | null>(null);
 
   // Stable identity for this editing session (cursor label + color).
   const userRef = useRef<CollabUser>({
@@ -106,12 +110,13 @@ export function PageView({
 
   return (
     <div className="pb-16">
-      <div className="flex items-center justify-end gap-2 px-12 pt-3">
+      <div className="no-print flex items-center justify-end gap-2 px-12 pt-3">
         {!page.is_database && collab && <PresenceAvatars collab={collab} />}
         <CommentsButton pageId={page.id} />
         {!page.is_database && (
           <ShareMenu pageId={page.id} title={page.title} />
         )}
+        <PageMenu page={page} workspaceId={workspaceId} editorRef={editorRef} />
       </div>
       <PageHeader page={page} workspaceId={workspaceId} />
       <div className="mx-auto max-w-3xl px-12 pt-2">
@@ -135,6 +140,9 @@ export function PageView({
               (page.content as PartialBlock[] | null) ?? undefined
             }
             onChange={handleContentChange}
+            onEditorReady={(e) => {
+              editorRef.current = e;
+            }}
           />
         </div>
       ) : (

@@ -37,7 +37,8 @@ Legend: ✅ done · 🟡 partial · ⬜ not started
 | Per-page roles, @mentions, member invites | ⬜ |
 | Media uploads (image/file/video) + rich block set | ✅ |
 | Embeds/bookmarks, callout, columns, code highlight | ⬜ |
-| Export, templates, mobile polish | ⬜ |
+| Export (Markdown/print), duplicate, mobile sidebar | ✅ |
+| Templates gallery, import, version history, a11y/perf | ⬜ |
 
 ---
 
@@ -166,14 +167,18 @@ Building incrementally; Table view shipped first.
 - ⬜ **@mentions** of people/pages; notifications.
 - ⬜ Workspace **member management** & invites.
 
-### Phase 10 — Productivity & polish
-- ⬜ **Templates** (page + database templates; "duplicate as template").
-- ⬜ **Export**: Markdown and PDF; import from Markdown.
+### Phase 10 — Productivity & polish 🟡 (export, duplicate, mobile done)
+- ✅ **Duplicate** page (template-lite): copies title/icon/cover/content.
+- ✅ **Export**: Markdown download + Print / Save-as-PDF (print stylesheet hides
+  chrome) via a page "•••" menu.
+- ✅ **Mobile-responsive**: collapsible sidebar (slide-over + backdrop on small
+  screens, static on desktop, hamburger toggle, closes on navigation).
+- ✅ **Keyboard shortcuts** so far: ⌘K palette, ⌘↵ send comment, editor shortcuts.
+- ⬜ Full **template gallery** + database-template duplication; **import** from
+  Markdown.
 - ⬜ *(Optional)* **Version history** via `page_snapshots`.
-- ⬜ Full **keyboard shortcuts**; command palette actions.
-- ⬜ **Mobile-responsive** layout; collapsible sidebar.
-- ⬜ Performance: virtualized long pages/tables, optimistic updates everywhere.
-- ⬜ Accessibility pass; empty states; error/loading boundaries.
+- ⬜ Performance: virtualized long pages/tables; broader optimistic updates.
+- ⬜ Accessibility pass; richer empty states; error/loading boundaries.
 
 ---
 

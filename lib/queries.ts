@@ -488,6 +488,28 @@ export async function deleteComment(id: string): Promise<void> {
   if (error) throw error;
 }
 
+// --- Duplicate (template-lite) --------------------------------------------
+
+export async function duplicatePage(pageId: string): Promise<Page> {
+  const src = await getPage(pageId);
+  if (!src) throw new Error("Page not found");
+  const { data, error } = await db()
+    .from("pages")
+    .insert({
+      workspace_id: src.workspace_id,
+      parent_id: src.parent_id,
+      title: `${src.title || "Untitled"} (copy)`,
+      icon: src.icon,
+      cover_url: src.cover_url,
+      content: src.content,
+      is_database: src.is_database,
+    })
+    .select("*")
+    .single();
+  if (error) throw error;
+  return data as Page;
+}
+
 export async function signOut() {
   await db().auth.signOut();
 }

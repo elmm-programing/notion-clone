@@ -48,3 +48,18 @@ body {
 .bn-editor {
   background: transparent !important;
 }
+
+/* Print / "Save as PDF": show only the page content */
+@media print {
+  aside,
+  .no-print {
+    display: none !important;
+  }
+  main {
+    overflow: visible !important;
+  }
+  html,
+  body {
+    height: auto;
+  }
+}

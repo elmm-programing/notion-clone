@@ -11,18 +11,25 @@ import type { Block, PartialBlock } from "@blocknote/core";
 import { uploadMedia } from "@/lib/queries";
 import { FRAGMENT, type CollabProvider } from "@/lib/collab";
 
+// Minimal surface used for export — avoids BlockNote's editor generics.
+export type MarkdownExporter = {
+  blocksToMarkdownLossy: () => string | Promise<string>;
+};
+
 export default function Editor({
   pageId,
   initialContent,
   onChange,
   editable = true,
   collab,
+  onEditorReady,
 }: {
   pageId: string;
   initialContent?: PartialBlock[];
   onChange?: (document: Block[]) => void;
   editable?: boolean;
   collab?: CollabProvider | null;
+  onEditorReady?: (editor: MarkdownExporter | null) => void;
 }) {
   const { resolvedTheme } = useTheme();
 
@@ -75,6 +82,13 @@ export default function Editor({
     collab.doc.on("update", handler);
     return () => collab.doc.off("update", handler);
   }, [collab, editor]);
+
+  // Expose the editor to the parent for export (Markdown).
+  useEffect(() => {
+    onEditorReady?.(editor);
+    return () => onEditorReady?.(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editor]);
 
   return (
     <BlockNoteView
