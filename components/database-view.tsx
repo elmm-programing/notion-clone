@@ -22,6 +22,7 @@ import {
   useDbRows,
   useDbValues,
   useDbViews,
+  usePages,
   useDeleteDbProperty,
   useDeleteDbView,
   useDeletePage,
@@ -102,6 +103,26 @@ export function DatabaseView({
     () => new Map(properties.map((p) => [p.id, p])),
     [properties],
   );
+
+  // All workspace pages — used by relation properties (candidates + titles).
+  const { data: allPages = [] } = usePages(workspaceId);
+  const pagesById = useMemo(
+    () => new Map(allPages.map((p) => [p.id, p])),
+    [allPages],
+  );
+  const databases = useMemo(
+    () => allPages.filter((p) => p.is_database && p.id !== dbPage.id),
+    [allPages, dbPage.id],
+  );
+
+  function setRelationDb(propId: string, dbId: string) {
+    const prop = properties.find((p) => p.id === propId);
+    if (!prop) return;
+    updateProperty.mutate({
+      id: propId,
+      patch: { config: { ...prop.config, relationDbId: dbId } },
+    });
+  }
 
   const filtered = useMemo(
     () => applyFilters(rows, config.filters ?? [], propsById, valueMap),
@@ -362,6 +383,8 @@ export function DatabaseView({
           rows={sorted}
           valueMap={valueMap}
           members={members}
+          pagesById={pagesById}
+          databases={databases}
           sorts={config.sorts ?? []}
           groupByProperty={groupProperty}
           widths={config.widths ?? {}}
@@ -381,6 +404,7 @@ export function DatabaseView({
             updateProperty.mutate({ id, patch: { type } })
           }
           onDeleteProp={(id) => deleteProperty.mutate(id)}
+          onSetRelationDb={setRelationDb}
           onAddProp={() =>
             createProperty.mutate({ name: "Property", type: "text" })
           }

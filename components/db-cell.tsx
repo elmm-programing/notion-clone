@@ -22,12 +22,14 @@ export function DbCell({
   value,
   row,
   members,
+  pagesById,
   onCommit,
 }: {
   property: DbProperty;
   value: Json | null;
   row: Page;
   members: WorkspaceMemberInfo[];
+  pagesById: Map<string, Page>;
   onCommit: (value: Json | null) => void;
 }) {
   switch (property.type) {
@@ -120,6 +122,25 @@ export function DbCell({
 
     case "files":
       return <FilesCell row={row} value={value} onCommit={onCommit} />;
+
+    case "relation": {
+      const targetDb = property.config.relationDbId;
+      const ids = Array.isArray(value) ? (value as string[]) : [];
+      const candidates = targetDb
+        ? [...pagesById.values()].filter(
+            (p) => p.parent_id === targetDb && !p.deleted_at,
+          )
+        : [];
+      return (
+        <RelationCell
+          ids={ids}
+          candidates={candidates}
+          pagesById={pagesById}
+          hasTarget={!!targetDb}
+          onCommit={onCommit}
+        />
+      );
+    }
 
     default:
       // text & url
@@ -236,6 +257,55 @@ function FilesCell({
         {busy ? "…" : "+"}
         <input type="file" className="hidden" onChange={onPick} />
       </label>
+    </div>
+  );
+}
+
+function RelationCell({
+  ids,
+  candidates,
+  pagesById,
+  hasTarget,
+  onCommit,
+}: {
+  ids: string[];
+  candidates: Page[];
+  pagesById: Map<string, Page>;
+  hasTarget: boolean;
+  onCommit: (value: Json | null) => void;
+}) {
+  if (!hasTarget) {
+    return <span className="text-xs text-muted-foreground/60">Set target db</span>;
+  }
+  const available = candidates.filter((c) => !ids.includes(c.id));
+  return (
+    <div className="flex flex-wrap items-center gap-1">
+      {ids.map((id) => (
+        <span
+          key={id}
+          className="flex items-center gap-1 rounded bg-accent px-1.5 py-0.5 text-xs"
+        >
+          {pagesById.get(id)?.title || "Untitled"}
+          <button
+            onClick={() => onCommit(ids.filter((x) => x !== id))}
+            className="hover:text-red-500"
+          >
+            <X size={10} />
+          </button>
+        </span>
+      ))}
+      <select
+        value=""
+        onChange={(e) => e.target.value && onCommit([...ids, e.target.value])}
+        className="bg-transparent text-xs text-muted-foreground outline-none"
+      >
+        <option value="">+ link</option>
+        {available.map((c) => (
+          <option key={c.id} value={c.id}>
+            {c.title || "Untitled"}
+          </option>
+        ))}
+      </select>
     </div>
   );
 }

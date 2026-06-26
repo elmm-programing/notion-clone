@@ -43,13 +43,13 @@ today; Notion is per-page with inherited roles.
 
 ---
 
-## M8 — Database power features
+## M8 — Database power features 🟡 (relations done)
 
 What separates a "table app" from Notion databases.
 
 | Item | Effort | Notes |
 | --- | --- | --- |
-| ⬜ **Relations** (link rows across databases) | L | `db_relations` (or a `relation` property `config` pointing at another db) + a row-picker cell; store linked row ids; render as chips. |
+| ✅ **Relations** (link rows across databases) | L | `relation` property whose `config.relationDbId` points at another db; cell links rows (ids in `db_values`) with a picker + chips showing titles. No migration (additive). |
 | ⬜ **Rollups** (aggregate over a relation) | L | Rollup property config (relation + target prop + function); compute client-side or via a SQL view/RPC. Depends on Relations. |
 | ⬜ **Formulas** | L | A formula property with a small expression parser/evaluator over row values (functions, arithmetic, dates). Consider a vetted expression lib. |
 | ⬜ **Sub-tasks / linked database views** | M | Embed a filtered view of another database inside a page (a "linked database" block). |

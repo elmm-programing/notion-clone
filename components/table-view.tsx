@@ -28,6 +28,7 @@ const TYPE_LABELS: Record<DbPropertyType, string> = {
   checkbox: "Checkbox",
   date: "Date",
   url: "URL",
+  relation: "Relation",
   created_time: "Created time",
   edited_time: "Edited time",
 };
@@ -37,6 +38,8 @@ export function TableView({
   rows,
   valueMap,
   members,
+  pagesById,
+  databases,
   sorts,
   groupByProperty,
   widths,
@@ -50,6 +53,7 @@ export function TableView({
   onRenameProp,
   onRetypeProp,
   onDeleteProp,
+  onSetRelationDb,
   onAddProp,
   canCreate,
 }: {
@@ -57,6 +61,8 @@ export function TableView({
   rows: Page[];
   valueMap: ValueMap;
   members: WorkspaceMemberInfo[];
+  pagesById: Map<string, Page>;
+  databases: Page[];
   sorts: DbSort[];
   groupByProperty: DbProperty | null;
   widths: Record<string, number>;
@@ -70,6 +76,7 @@ export function TableView({
   onRenameProp: (id: string, name: string) => void;
   onRetypeProp: (id: string, type: DbPropertyType) => void;
   onDeleteProp: (id: string) => void;
+  onSetRelationDb: (id: string, dbId: string) => void;
   onAddProp: () => void;
   canCreate: boolean;
 }) {
@@ -153,6 +160,7 @@ export function TableView({
               value={getCellValue(row, property, valueMap)}
               row={row}
               members={members}
+              pagesById={pagesById}
               onCommit={(v) => onCommitValue(row, property, v)}
             />
           </td>
@@ -192,9 +200,13 @@ export function TableView({
                   <div className="flex items-center justify-between gap-1">
                     <PropertyHeader
                       property={property}
+                      databases={databases}
                       onRename={(name) => onRenameProp(property.id, name)}
                       onRetype={(type) => onRetypeProp(property.id, type)}
                       onDelete={() => onDeleteProp(property.id)}
+                      onSetRelationDb={(dbId) =>
+                        onSetRelationDb(property.id, dbId)
+                      }
                     />
                     <button
                       onClick={() => onToggleSort(property.id)}
@@ -267,14 +279,18 @@ function SortIcon({ dir }: { dir?: "asc" | "desc" }) {
 
 function PropertyHeader({
   property,
+  databases,
   onRename,
   onRetype,
   onDelete,
+  onSetRelationDb,
 }: {
   property: DbProperty;
+  databases: Page[];
   onRename: (name: string) => void;
   onRetype: (type: DbPropertyType) => void;
   onDelete: () => void;
+  onSetRelationDb: (dbId: string) => void;
 }) {
   const [open, setOpen] = useState(false);
   return (
@@ -305,6 +321,20 @@ function PropertyHeader({
                 </option>
               ))}
             </select>
+            {property.type === "relation" && (
+              <select
+                value={property.config.relationDbId ?? ""}
+                onChange={(e) => onSetRelationDb(e.target.value)}
+                className="mb-2 w-full rounded border border-border bg-background px-2 py-1 text-xs outline-none"
+              >
+                <option value="">Target database…</option>
+                {databases.map((d) => (
+                  <option key={d.id} value={d.id}>
+                    {d.title || "Untitled database"}
+                  </option>
+                ))}
+              </select>
+            )}
             <button
               onClick={() => {
                 onDelete();

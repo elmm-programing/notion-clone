@@ -67,6 +67,7 @@ export type DbPropertyType =
   | "checkbox"
   | "date"
   | "url"
+  | "relation"
   | "created_time"
   | "edited_time";
 
@@ -83,7 +84,7 @@ export type DbProperty = {
   page_id: string;
   name: string;
   type: DbPropertyType;
-  config: { options?: string[] } & Record<string, Json>;
+  config: { options?: string[]; relationDbId?: string } & Record<string, Json>;
   position: number;
   created_at: string;
 };
