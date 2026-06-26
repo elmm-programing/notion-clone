@@ -8,6 +8,10 @@
 > ProseMirror) · Yjs (CRDT) · TanStack Query · Tailwind v4 · next-themes ·
 > dnd-kit · Zustand.
 >
+> **Remaining work to feature-complete:** Phases 0–10 (core) are done; the
+> deferred/stretch items and the path to full Notion parity live in
+> [`ROADMAP.md`](./ROADMAP.md) (milestones M6–M13).
+>
 > **Status today:** the foundation (Phases 0–3) is largely built and the app
 > compiles. This document tracks what's done and details every remaining phase
 > through to a complete clone.
