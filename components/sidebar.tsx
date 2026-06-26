@@ -31,6 +31,7 @@ import {
   Star,
   Trash,
   Trash2,
+  Users,
 } from "lucide-react";
 import {
   useCreateDatabase,
@@ -45,6 +46,7 @@ import { signOut } from "@/lib/queries";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { TrashDialog } from "@/components/trash-dialog";
+import { MembersDialog } from "@/components/members-dialog";
 import type { Page } from "@/types/database";
 
 export function Sidebar({
@@ -67,6 +69,7 @@ export function Sidebar({
   const movePage = useMovePage(workspaceId);
 
   const [trashOpen, setTrashOpen] = useState(false);
+  const [membersOpen, setMembersOpen] = useState(false);
 
   const byId = useMemo(
     () => new Map(pages.map((p) => [p.id, p])),
@@ -160,7 +163,16 @@ export function Sidebar({
     <aside className="flex h-full w-60 shrink-0 flex-col border-r border-border bg-sidebar text-sm">
       <div className="flex items-center justify-between px-3 py-3">
         <span className="truncate font-medium">{workspaceName}</span>
-        <ThemeToggle />
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setMembersOpen(true)}
+            className="text-muted-foreground hover:text-foreground"
+            title="Members"
+          >
+            <Users size={15} />
+          </button>
+          <ThemeToggle />
+        </div>
       </div>
 
       <div className="px-2">
@@ -266,6 +278,13 @@ export function Sidebar({
         <TrashDialog
           workspaceId={workspaceId}
           onClose={() => setTrashOpen(false)}
+        />
+      )}
+
+      {membersOpen && (
+        <MembersDialog
+          workspaceId={workspaceId}
+          onClose={() => setMembersOpen(false)}
         />
       )}
     </aside>

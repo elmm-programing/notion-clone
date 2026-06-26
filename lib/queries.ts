@@ -249,16 +249,19 @@ export async function listWorkspaceMembers(
 ): Promise<WorkspaceMemberInfo[]> {
   const { data: members, error } = await db()
     .from("workspace_members")
-    .select("user_id")
+    .select("user_id, role")
     .eq("workspace_id", workspaceId);
   if (error) throw error;
-  const ids = (members as { user_id: string }[]).map((m) => m.user_id);
-  if (ids.length === 0) return [];
+  const rows = members as { user_id: string; role: string }[];
+  if (rows.length === 0) return [];
 
   const { data: profs, error: pErr } = await db()
     .from("profiles")
     .select("id, email")
-    .in("id", ids);
+    .in(
+      "id",
+      rows.map((m) => m.user_id),
+    );
   if (pErr) throw pErr;
   const emailById = new Map(
     (profs as { id: string; email: string | null }[]).map((p) => [
@@ -266,7 +269,44 @@ export async function listWorkspaceMembers(
       p.email,
     ]),
   );
-  return ids.map((id) => ({ user_id: id, email: emailById.get(id) ?? null }));
+  return rows.map((m) => ({
+    user_id: m.user_id,
+    email: emailById.get(m.user_id) ?? null,
+    role: m.role,
+  }));
+}
+
+export async function findUserIdByEmail(email: string): Promise<string | null> {
+  const { data, error } = await db().rpc("find_user_id_by_email", {
+    p_email: email,
+  });
+  if (error) throw error;
+  return (data as string | null) ?? null;
+}
+
+export async function addWorkspaceMember(
+  workspaceId: string,
+  email: string,
+): Promise<void> {
+  const uid = await findUserIdByEmail(email);
+  if (!uid)
+    throw new Error("No account with that email — they need to sign up first.");
+  const { error } = await db()
+    .from("workspace_members")
+    .insert({ workspace_id: workspaceId, user_id: uid, role: "member" });
+  if (error) throw error;
+}
+
+export async function removeWorkspaceMember(
+  workspaceId: string,
+  userId: string,
+): Promise<void> {
+  const { error } = await db()
+    .from("workspace_members")
+    .delete()
+    .eq("workspace_id", workspaceId)
+    .eq("user_id", userId);
+  if (error) throw error;
 }
 
 // --- Databases ------------------------------------------------------------

@@ -28,15 +28,15 @@ Small, self-contained items deferred during Phases 4–8. Best ROI.
 
 ---
 
-## M7 — Permissions & collaboration completeness
+## M7 — Permissions & collaboration completeness 🟡 (member management done)
 
 The biggest correctness/security area still open. Access is **workspace-level**
 today; Notion is per-page with inherited roles.
 
 | Item | Effort | Notes |
 | --- | --- | --- |
-| ⬜ Per-page **sharing & roles** (view/comment/edit) | L | New `page_shares (page_id, principal, role)`; a `page_access(page_id, min_role)` SECURITY DEFINER helper that walks ancestry for **inherited** permissions; rewrite RLS on `pages`/`blocks`/`db_*`/`comments` to use it. Highest-risk change — test policies explicitly. |
-| ⬜ Workspace **member management & invites** | M | Invite by email (Supabase admin invite or a `workspace_invites` token table + accept flow); roles owner/admin/member/guest; a Members settings screen. |
+| ⬜ Per-page **sharing & roles** (view/comment/edit) | L | New `page_shares (page_id, principal, role)`; a `page_access(page_id, min_role)` SECURITY DEFINER helper that walks ancestry for **inherited** permissions; rewrite RLS on `pages`/`blocks`/`db_*`/`comments` to use it. Highest-risk change — **needs a live DB to verify policies**, so deferred. |
+| ✅ Workspace **member management & invites** | M | Invite existing users by email (`find_user_id_by_email` SECURITY DEFINER), remove members, Members dialog; owner-managed (migration `0010`). Adding a member grants full workspace access, making realtime collab/comments usable by multiple people. |
 | ⬜ **@mentions** in the editor (people & pages) | M | Custom BlockNote inline content + suggestion menu; store mention refs; render as links/chips. |
 | ⬜ **Notifications** inbox | M | `notifications` table fed by mentions, comments, shares (DB triggers or app writes); a bell/inbox UI; mark-read. Depends on mentions/comments. |
 | ⬜ **Block-level / inline comments** | M | Anchor comments to a block id (or a Yjs relative position); comment threads in the margin. Extends page-level comments from Phase 9. |

@@ -6,6 +6,7 @@ import {
 import {
   addComment,
   addFavorite,
+  addWorkspaceMember,
   createDatabase,
   createDbProperty,
   createDbRow,
@@ -29,6 +30,7 @@ import {
   listWorkspaceMembers,
   movePage,
   removeFavorite,
+  removeWorkspaceMember,
   restorePage,
   searchPages,
   setCommentResolved,
@@ -187,6 +189,25 @@ export function useWorkspaceMembers(workspaceId: string | null) {
     queryKey: ["workspace_members", workspaceId],
     queryFn: () => listWorkspaceMembers(workspaceId!),
     enabled: !!workspaceId,
+  });
+}
+
+export function useAddMember(workspaceId: string | null) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (email: string) => addWorkspaceMember(workspaceId!, email),
+    onSuccess: () =>
+      qc.invalidateQueries({ queryKey: ["workspace_members", workspaceId] }),
+  });
+}
+
+export function useRemoveMember(workspaceId: string | null) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (userId: string) =>
+      removeWorkspaceMember(workspaceId!, userId),
+    onSuccess: () =>
+      qc.invalidateQueries({ queryKey: ["workspace_members", workspaceId] }),
   });
 }
 

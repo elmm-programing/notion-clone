@@ -73,6 +73,7 @@ export type DbPropertyType =
 export type WorkspaceMemberInfo = {
   user_id: string;
   email: string | null;
+  role: string;
 };
 
 export type DbFile = { name: string; url: string };
@@ -220,6 +221,10 @@ export type Database = {
       get_public_page: {
         Args: { p_slug: string };
         Returns: Page[];
+      };
+      find_user_id_by_email: {
+        Args: { p_email: string };
+        Returns: string;
       };
     };
     Enums: Record<string, never>;
